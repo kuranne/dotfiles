@@ -1,0 +1,24 @@
+# Password typing directly script for skip using clipboard
+# avoid password is in clipboard manager
+passc() {
+    if [ -z "$1" ]; then
+        echo "require 1 argument: ex email/email"
+        return 1
+    fi
+    
+    echo "Script will type the password in 5 seconds..."
+    sleep 5
+    
+    if command -v osascript > /dev/null; then
+        PW="$(pass "$1" | head -n 1)" osascript -e 'tell application "System Events" to keystroke (system attribute "PW")'
+    elif command -v xdotool > /dev/null; then
+        pass "$1" | head -n 1 | xdotool type --clearmodifiers --file -
+    elif command -v wtype > /dev/null; then
+        pass "$1" | head -n 1 | wtype -
+    else
+        echo "Error: No keystroke tool found."
+        return 1
+    fi
+}
+
+compdef passc=pass
