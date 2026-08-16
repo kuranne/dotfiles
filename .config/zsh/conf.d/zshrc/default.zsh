@@ -13,16 +13,18 @@ typeset -U source_files=()
 # Manual Scripts Extension
 # These will be at the bottom in $source_files
 local scripts_extension=(
-  $ZSHRC_CONF/plugins/plugins.zsh
-  $ZSHRC_CONF/integrations/integrations.zsh
-  $ZSHRC_CONF/aliases/aliases.zsh
-  $ZSHRC_CONF/bindings/binding.zsh
+  $ZSHRC_CONF/plugins/*
+  $ZSHRC_CONF/integrations/*
+  $ZSHRC_CONF/aliases/*
+  $ZSHRC_CONF/bindings/*
 )
 
-for script in "${scripts_extension[@]}"; do
-  if [[ -f "$script" ]]; then
-    source_files+=("$script")
-  fi
+for scripts in "${scripts_extension[@]}"; do
+    for script in $scripts; do
+        if [[ -f "$script" ]]; then
+            source_files+=("$script")
+        fi
+    done
 done
 
 # Source zsh script
