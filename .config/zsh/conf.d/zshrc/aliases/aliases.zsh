@@ -4,15 +4,6 @@
 
 # --- Global Command Replacements & Previews ---
 
-local aliases_zsh=(
-    "passc.zsh"
-)
-for f in $aliases_zsh; do
-    if [[ -f "${ZSHRC_CONF}/aliases/${f}" ]]; then
-        source "${ZSHRC_CONF}/aliases/${f}"
-    fi
-done
-
 # eza (Modern ls replacement)
 if command -v eza > /dev/null; then
   alias ls='eza --icons --group-directories-first'
