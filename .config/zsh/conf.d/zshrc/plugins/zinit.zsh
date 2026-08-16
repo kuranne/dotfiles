@@ -15,6 +15,8 @@ source "${ZINIT_HOME}/zinit.zsh"
 
 
 # Initialize completions before sourcing plugins so 'compdef' is available
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/cache"
 autoload -Uz compinit
 compinit -d "$ZSH_COMPDUMP"
 
