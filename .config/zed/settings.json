@@ -1,0 +1,58 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+  // Discord Rich Presence Config
+  "application_id": "1263505205522337886",
+
+  // Zed Config
+  "buffer_font_family": "JetBrains Mono NL",
+  "code_lens": "on",
+
+  "diagnostics": {
+    "inline": {
+      "enabled": true,
+      "max_severity": "all",
+    },
+  },
+
+  "format_on_save": "on",
+
+  "icon_theme": {
+    "mode": "dark",
+    "light": "Zed (Default)",
+    "dark": "Material Icon Theme",
+  },
+
+  "project_panel": {
+    "sort_mode": "directories_first",
+    "hide_hidden": false,
+    "hide_root": true,
+    "diagnostic_badges": true,
+    "git_status_indicator": true,
+    "bold_folder_labels": false,
+    "dock": "right",
+  },
+  "proxy": "",
+  "base_keymap": "Zed",
+  "buffer_font_size": 15,
+
+  "terminal": {
+    "show_count_badge": false,
+    "dock": "bottom",
+  },
+
+  "theme": {
+    "mode": "dark",
+    "light": "One Light",
+    "dark": "One Dark Pro",
+  },
+
+  "ui_font_size": 16,
+  "ui_font_family": ".ZedMono",
+}
