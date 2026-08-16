@@ -28,7 +28,7 @@ command_not_found_handler() {
 
     # If cmd is script (ex. ./script), skip
     if [[ "$cmd" == */* ]]; then
-        echo "zsh: file not found: $cmd" >&2
+        echo "zsh: cmd not found: $cmd" >&2
         return 127
     fi
 
