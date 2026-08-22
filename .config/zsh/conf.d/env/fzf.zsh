@@ -1,7 +1,3 @@
-# =========================================================
-# FZF Environment Variables
-# =========================================================
-
 export FZF_DEFAULT_OPTS="--height 75% --layout=reverse --border --inline-info"
 
 # strip-cwd-prefix removes the leading ./ from results

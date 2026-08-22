@@ -19,9 +19,8 @@ if [[ -n "$brew_prefix_tcl" ]]; then
     export PKG_CONFIG_PATH="$brew_prefix_tcl/lib/pkgconfig:$PKG_CONFIG_PATH"
 fi
 
-export GPG_TTY=$(tty)
-export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
-gpg-connect-agent updatestartuptty /bye >/dev/null 2>&1
-
-# ---------- Emasc to Vim
-bindkey -v
+if command -v gpgconf &> /dev/null; then
+    export GPG_TTY=$(tty)
+    export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
+    gpg-connect-agent updatestartuptty /bye >/dev/null 2>&1
+fi

@@ -1,44 +1,50 @@
-# ==============================================================================
-# BINDING
-# ==============================================================================
-
-# ---------- Functions ----------
+if command -v pbcopy >/dev/null; then
+    ZSH_CLIPBOARD_CMD="pbcopy"
+elif command -v xclip >/dev/null; then
+    ZSH_CLIPBOARD_CMD="xclip -selection clipboard"
+elif command -v wl-copy >/dev/null; then
+    ZSH_CLIPBOARD_CMD="wl-copy"
+fi
 
 copy-command() {
+
     [[ -z "$BUFFER" ]] && return
 
-    if command -v pbcopy > /dev/null; then
-        print -rn -- "$BUFFER" | pbcopy
-    elif command -v xclip > /dev/null; then
-        print -rn -- "$BUFFER" | xclip -selection clipboard
-    elif command -v wl-copy > /dev/null; then
-        print -rn -- "$BUFFER" | wl-copy
+    if [[ -n "$ZSH_CLIPBOARD_CMD" ]]; then
+        eval "print -rn -- \"\$BUFFER\" | $ZSH_CLIPBOARD_CMD"
+        zle -M "Copied current command to clipboard!"
     else
         zle -M "Error: No clipboard tool found (install pbcopy/xclip/wl-copy)"
         return 1
     fi
-
-    zle -M "Copied current command to clipboard!"
 }
 
 # ---------- Public Copy ----------
 C() {
     # Fetch the very last command from history
     local last_cmd=$(fc -ln -1)
-    
+
     # If the last command exists, evaluate it and send output to clipboard
     if [[ -n "$last_cmd" ]]; then
-        eval "$last_cmd" | pbcopy
-        # Using the Nerd Font copy icon ( ) nf-fa-copy
-        echo "  Copied output of: $last_cmd"
+        if [[ -n "$ZSH_CLIPBOARD_CMD" ]]; then
+            eval "$last_cmd | $ZSH_CLIPBOARD_CMD"
+            # Using the Nerd Font copy icon ( ) nf-fa-copy
+            echo "  Copied output of: $last_cmd"
+        else
+            echo "Error: No clipboard tool found."
+        fi
     fi
 }
 
+
+# --- Public Copy ---
 magic-c-expand() {
     # Check if the buffer ends with " C" (space + C) BUT is not exactly "C" alone
     if [[ "$BUFFER" == *" C" && "$BUFFER" != "C" ]]; then
-        # Morph " C" into " | pbcopy" dynamically on the screen
-        BUFFER="${BUFFER% C} | pbcopy"
+        if [[ -n "$ZSH_CLIPBOARD_CMD" ]]; then
+            # Morph " C" into " | <clipboard_cmd>" dynamically on the screen
+            BUFFER="${BUFFER% C} | $ZSH_CLIPBOARD_CMD"
+        fi
     fi
 }
 
@@ -62,6 +68,9 @@ _yazi_file_explorer() {
 # ==============================================================================
 # Keybinding
 # ==============================================================================
+
+# ---------- Vim mode
+bindkey -v
 
 # ---------- Copy command
 zle -N copy-command
