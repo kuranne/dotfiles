@@ -1,5 +1,5 @@
 # ==============================================================================
-# ENVIRONMENT VARIABLES
+# ENVIRONMENT VARIABLES (.zshenv)
 # ==============================================================================
 
 # --- System & Tool Environment Variables ---
@@ -76,7 +76,11 @@ export VISUAL="vim"
 # ---------- Other ----------
 # Homebrew prefix
 if [[ -d "/opt/homebrew" ]]; then
-    BREW_PREFIX="/opt/homebrew"
-elif [[ -d "/usr/local" ]]; then
-    BREW_PREFIX="/usr/local"
+    export BREW_PREFIX="/opt/homebrew"
+elif [[ -x "/usr/local/bin/brew" ]]; then
+    export BREW_PREFIX="/usr/local"
+elif [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
+    export BREW_PREFIX="/home/linuxbrew/.linuxbrew"
+elif [[ -d "/opt/linuxbrew/.linuxbrew" ]]; then
+    export BREW_PREFIX="/opt/linuxbrew/.linuxbrew"
 fi

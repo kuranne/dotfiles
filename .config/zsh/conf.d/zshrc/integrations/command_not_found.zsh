@@ -1,8 +1,9 @@
-# ==============================================================================
-# FAST COMMAND NOT FOUND HANDLER (SQLITE CACHED)
-# ==============================================================================
-
 typeset -g CNF_DB_PATH="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/cnf.db"
+
+## 0. Capture pre-existing system handler (from apt, dnf, pkgfile, etc.)
+if (( $+functions[command_not_found_handler] )); then
+    functions[_system_command_not_found_handler]=$functions[command_not_found_handler]
+fi
 
 ## Initialize SQLite schema for command-not-found cache.
 _cnf_init_db() {
@@ -25,6 +26,7 @@ EOF
 command_not_found_handler() {
     local cmd="$1"
     local found=0
+    local txt=""
 
     # If cmd is script (ex. ./script), skip
     if [[ "$cmd" == */* ]]; then
@@ -35,7 +37,7 @@ command_not_found_handler() {
     _cnf_init_db
 
     # Escape single quotes for SQL safety
-    local sql_cmd="${cmd//\'/\'\'}"
+    local sql_cmd="${cmd//\'/''}"
 
     # 1. Check SQLite cache
     local cached
@@ -61,18 +63,37 @@ command_not_found_handler() {
             msg="zsh: command not found: $cmd\n    It can be installed via mise:\n    mise use -g $cmd"
             printf "%b\n" "$msg"
             found=1
-        elif command -v brew >/dev/null; then
-            local txt="$(brew which-formula --explain "$cmd" 2>/dev/null)"
-            if [[ -n "$txt" ]]; then
-                src="brew"
-                msg="$txt"
-                echo "$msg"
-                found=1
-            fi
+        elif command -v brew >/dev/null && txt="$(brew which-formula --explain "$cmd" 2>/dev/null)" && [[ -n "$txt" ]]; then
+            src="brew"
+            msg="$txt"
+            echo "$msg"
+            found=1
+        # Fallback to existing registered system handler
+        elif (( $+functions[_system_command_not_found_handler] )) && txt="$(_system_command_not_found_handler "$cmd" 2>&1)" && [[ -n "$txt" ]]; then
+            src="system"
+            msg="$txt"
+            echo "$msg" >&2
+            found=1
+        # Hard fallbacks to common OS binaries if not sourced properly
+        elif [[ -x /usr/lib/command-not-found ]] && txt="$(/usr/lib/command-not-found -- "$cmd" 2>&1)" && [[ -n "$txt" ]]; then
+            src="apt"
+            msg="$txt"
+            echo "$msg" >&2
+            found=1
+        elif [[ -x /usr/libexec/pk-command-not-found ]] && txt="$(/usr/libexec/pk-command-not-found "$cmd" 2>&1)" && [[ -n "$txt" ]]; then
+            src="dnf"
+            msg="$txt"
+            echo "$msg" >&2
+            found=1
+        elif command -v command-not-found >/dev/null && txt="$(command-not-found "$cmd" 2>&1)" && [[ -n "$txt" ]]; then
+            src="generic"
+            msg="$txt"
+            echo "$msg" >&2
+            found=1
         fi
 
         # 3. Save to SQLite cache
-        local sql_msg="${msg//\'/\'\'}"
+        local sql_msg="${msg//\'/''}"
         sqlite3 "$CNF_DB_PATH" "INSERT OR REPLACE INTO cnf_cache (cmd, source, message) VALUES ('$sql_cmd', '$src', '$sql_msg');" >/dev/null 2>&1
     fi
 

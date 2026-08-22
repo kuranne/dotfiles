@@ -1,7 +1,3 @@
-# =========================================================
-# ZINIT PLUGIN MANAGER
-# =========================================================
-
 # Set the directory where Zinit will be installed
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
