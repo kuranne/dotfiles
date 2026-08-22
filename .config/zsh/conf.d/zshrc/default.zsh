@@ -21,9 +21,7 @@ local scripts_extension=(
 
 for scripts in "${scripts_extension[@]}"; do
     for script in $scripts; do
-        if [[ -f "$script" ]]; then
-            source_files+=("$script")
-        fi
+        source_files+=("$script")
     done
 done
 
