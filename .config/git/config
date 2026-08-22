@@ -6,10 +6,13 @@
 [init]
 	defaultbranch = main
 [alias]
-	kuranne = "!f() { git config --local user.name 'kuranne' && git config --local user.email 'kurannemaisa@outlook.com' && git config --local user.signingkey '82D61241664FE535' && git config --local commit.gpgsign true; }; f"
+  nrokariw = "!f() { git config --local user.name 'Wirakorn Thanabat' && git config --local user.email 'wirakorn.tha@dome.tu.ac.th' && git config --local commit.gpgsign false; ssh-add ~/.ssh/github_nrokariw; }; f"
+	kuranne = "!f() { git config --local user.name 'Kuramais' && git config --local user.email 'kurannemaisa@outlook.com' && git config --local user.signingkey '82D61241664FE535' && git config --local commit.gpgsign true; }; f"
 [user]
-	name = Kuramais
+	name = 'Wirakorn Thanabat'
 	email = kurannemaisa@outlook.com
 	signingkey = 82D61241664FE535 
 [commit]
 	gpgsign = true
+[core]
+	excludesfile = /Users/kuranne/.config/git/gitignore
