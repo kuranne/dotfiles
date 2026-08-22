@@ -1,0 +1,11 @@
+# --- OS/Files System
+.DS_Store
+
+# --- Private
+# Directory
+
+**/[Pp]rivate/**
+
+# Files
+
+.env
