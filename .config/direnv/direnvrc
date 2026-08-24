@@ -1,0 +1,35 @@
+layout_cargo_cached() {
+  local current_dir="$PWD"
+  local has_cargo=0
+  local depth=0
+  local max_depth=3
+  local projects_boundary="${XDG_PROJECTS_HOME:-$HOME}"
+
+  while [[ $depth -le $max_depth ]]; do
+    if [[ -f "$current_dir/Cargo.toml" ]]; then
+      has_cargo=1
+      break
+    fi
+
+    if [[ -d "$current_dir/.git" || "$current_dir" == "$HOME" || "$current_dir" == "$projects_boundary" || "$current_dir" == "/" ]]; then
+      break
+    fi
+
+    current_dir="$(dirname "$current_dir")"
+    ((depth++))
+  done
+
+  if [[ $has_cargo -eq 1 ]]; then
+    local root_manifest
+    root_manifest="$(cargo locate-project --workspace --message-format plain 2>/dev/null)"
+
+    if [[ -n "$root_manifest" ]]; then
+      local ws_dir ws_name
+      ws_dir="$(dirname "$root_manifest")"
+      ws_name="$(basename "$ws_dir")"
+
+      export CARGO_TARGET_DIR="$HOME/.cache/cargo-target/$ws_name"
+      echo "direnv: CARGO_TARGET_DIR set to $CARGO_TARGET_DIR"
+    fi
+  fi
+}
