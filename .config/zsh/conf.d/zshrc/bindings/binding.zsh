@@ -70,7 +70,7 @@ _yazi_file_explorer() {
 # ==============================================================================
 
 # ---------- Vim mode
-bindkey -v
+# bindkey -v
 
 # ---------- Copy command
 zle -N copy-command
