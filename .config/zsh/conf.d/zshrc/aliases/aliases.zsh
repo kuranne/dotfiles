@@ -34,19 +34,13 @@ function history() {
     fi
 }
 
-rationalise-dot() {
-  if [[ $LBUFFER = *(cd\ |\ )*.. || $LBUFFER = *.. && ! $LBUFFER = *\"* && ! $LBUFFER = *\'* ]]; then
-    LBUFFER+=/..
-  else
-    LBUFFER+=.
-  fi
-}
-zle -N rationalise-dot
-bindkey . rationalise-dot
-bindkey -M isearch . self-insert 2>/dev/null
+alias ..="cd .."
+alias ...="cd ../.."
+alias ....="cd ../../.."
+alias .....="cd ../../../.."
+alias ......="cd ../../../../.."
 
 # Dotfiles
-
 alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
 
 # Clear Cache

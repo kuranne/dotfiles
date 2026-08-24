@@ -1,0 +1,56 @@
+# --- OS specific ---
+# macOS Settings
+macos-titlebar-style = tabs
+macos-window-buttons = hidden
+
+macos-icon = custom-style
+macos-icon-ghost-color = #B9B9B9
+macos-icon-screen-color = #000000
+
+# Performance
+quit-after-last-window-closed = true
+
+
+# --- Appearance ---
+
+# Window configuration (Corrected syntax)
+window-decoration = true
+window-title-font-family = "JetBrainsMonoNL Nerd Font"
+window-height = 32 
+window-width = 112
+
+# Theme
+theme = Afterglow
+
+# Background
+background = 141414
+background-opacity = 0.80
+background-opacity-cells = true
+background-blur = 10
+
+# --- Typography ---
+font-family = "JetBrainsMonoNL Nerd Font"
+font-size = 14
+font-thicken = true
+font-feature = "calt"
+font-feature = "liga"
+
+# --- Cursor styling ---
+cursor-style = block
+cursor-style-blink = true
+
+# --- Mouse & Interaction ---
+mouse-hide-while-typing = true
+copy-on-select = true
+
+# --- Keybindings ---
+keybind = super+shift+r=reload_config
+keybind = super+t=new_tab
+keybind = super+w=close_tab
+
+# --- Function --- 
+shell-integration = zsh
+split-inherit-working-directory = true
+tab-inherit-working-directory = true
+window-inherit-working-directory = true
+window-colorspace = display-p3
