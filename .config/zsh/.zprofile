@@ -9,7 +9,7 @@ fi
 
 # --- Homebrew / Compilers Environment ---
 if [[ -x "${BREW_PREFIX}/bin/brew" ]]; then
-    eval "$("$BREW_PREFIX/bin/brew" shellenv)"
+    eval "$("$BREW_PREFIX/bin/brew" shellenv zsh)"
 fi
 
 brew_prefix_tcl="${BREW_PREFIX}/opt/tcl-tk"

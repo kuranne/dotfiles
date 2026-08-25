@@ -24,7 +24,7 @@ theme = Afterglow
 
 # Background
 background = 141414
-background-opacity = 0.80
+background-opacity = 0.95
 background-opacity-cells = true
 background-blur = 10
 
@@ -49,8 +49,13 @@ keybind = super+t=new_tab
 keybind = super+w=close_tab
 
 # --- Function --- 
+command = /opt/homebrew/bin/zsh -l
 shell-integration = zsh
 split-inherit-working-directory = true
 tab-inherit-working-directory = true
 window-inherit-working-directory = true
 window-colorspace = display-p3
+
+# --- Environment ---
+env = ZDOTDIR=/Users/kuranne/.config/zsh
+env = XDG_CONFIG_HOME=/Users/kuranne/.config
