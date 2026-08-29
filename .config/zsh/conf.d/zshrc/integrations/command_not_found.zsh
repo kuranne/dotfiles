@@ -1,11 +1,10 @@
 typeset -g CNF_DB_PATH="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/cnf.db"
 
-## 0. Capture pre-existing system handler (from apt, dnf, pkgfile, etc.)
+# Capture pre-existing system handler (from apt, dnf, pkgfile, etc.)
 if (( $+functions[command_not_found_handler] )); then
     functions[_system_command_not_found_handler]=$functions[command_not_found_handler]
 fi
 
-## Initialize SQLite schema for command-not-found cache.
 _cnf_init_db() {
     [[ -f "$CNF_DB_PATH" ]] && return 0
     mkdir -p "${CNF_DB_PATH:h}" 2>/dev/null
@@ -22,7 +21,6 @@ CREATE TABLE IF NOT EXISTS cnf_cache (
 EOF
 }
 
-## Handler for unrecognized commands with SQLite caching and fallback.
 command_not_found_handler() {
     local cmd="$1"
     local found=0
@@ -36,10 +34,9 @@ command_not_found_handler() {
 
     _cnf_init_db
 
-    # Escape single quotes for SQL safety
     local sql_cmd="${cmd//\'/''}"
 
-    # 1. Check SQLite cache
+    # Check SQLite cache
     local cached
     cached="$(sqlite3 -separator '|' "$CNF_DB_PATH" "SELECT source, message FROM cnf_cache WHERE cmd = '$sql_cmd' LIMIT 1;" 2>/dev/null)"
 
@@ -54,7 +51,7 @@ command_not_found_handler() {
             found=1
         fi
     else
-        # 2. CACHE MISS: Search in package managers
+        # CACHE MISS: Search in package managers
         local src="none"
         local msg=""
 
@@ -68,23 +65,27 @@ command_not_found_handler() {
             msg="$txt"
             echo "$msg"
             found=1
+
         # Fallback to existing registered system handler
         elif (( $+functions[_system_command_not_found_handler] )) && txt="$(_system_command_not_found_handler "$cmd" 2>&1)" && [[ -n "$txt" ]]; then
             src="system"
             msg="$txt"
             echo "$msg" >&2
             found=1
+
         # Hard fallbacks to common OS binaries if not sourced properly
         elif [[ -x /usr/lib/command-not-found ]] && txt="$(/usr/lib/command-not-found -- "$cmd" 2>&1)" && [[ -n "$txt" ]]; then
             src="apt"
             msg="$txt"
             echo "$msg" >&2
             found=1
+
         elif [[ -x /usr/libexec/pk-command-not-found ]] && txt="$(/usr/libexec/pk-command-not-found "$cmd" 2>&1)" && [[ -n "$txt" ]]; then
             src="dnf"
             msg="$txt"
             echo "$msg" >&2
             found=1
+
         elif command -v command-not-found >/dev/null && txt="$(command-not-found "$cmd" 2>&1)" && [[ -n "$txt" ]]; then
             src="generic"
             msg="$txt"
@@ -92,12 +93,12 @@ command_not_found_handler() {
             found=1
         fi
 
-        # 3. Save to SQLite cache
+        # Save result to SQLite cache
         local sql_msg="${msg//\'/''}"
         sqlite3 "$CNF_DB_PATH" "INSERT OR REPLACE INTO cnf_cache (cmd, source, message) VALUES ('$sql_cmd', '$src', '$sql_msg');" >/dev/null 2>&1
     fi
 
-    # 4. Fallback: Native Zsh Fuzzy Matching (Did you mean?)
+    # Fallback: Native Zsh Fuzzy Matching aka. Did you mean?
     if [[ $found -eq 0 ]]; then
         echo "zsh: command not found: $cmd" >&2
 

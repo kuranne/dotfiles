@@ -7,7 +7,6 @@ elif command -v wl-copy >/dev/null; then
 fi
 
 copy-command() {
-
     [[ -z "$BUFFER" ]] && return
 
     if [[ -n "$ZSH_CLIPBOARD_CMD" ]]; then
@@ -19,70 +18,18 @@ copy-command() {
     fi
 }
 
-# ---------- Public Copy ----------
-C() {
-    # Fetch the very last command from history
-    local last_cmd=$(fc -ln -1)
-
-    # If the last command exists, evaluate it and send output to clipboard
-    if [[ -n "$last_cmd" ]]; then
-        if [[ -n "$ZSH_CLIPBOARD_CMD" ]]; then
-            eval "$last_cmd | $ZSH_CLIPBOARD_CMD"
-            # Using the Nerd Font copy icon ( ) nf-fa-copy
-            echo "  Copied output of: $last_cmd"
-        else
-            echo "Error: No clipboard tool found."
-        fi
-    fi
-}
-
-
-# --- Public Copy ---
-magic-c-expand() {
-    # Check if the buffer ends with " C" (space + C) BUT is not exactly "C" alone
-    if [[ "$BUFFER" == *" C" && "$BUFFER" != "C" ]]; then
-        if [[ -n "$ZSH_CLIPBOARD_CMD" ]]; then
-            # Morph " C" into " | <clipboard_cmd>" dynamically on the screen
-            BUFFER="${BUFFER% C} | $ZSH_CLIPBOARD_CMD"
-        fi
-    fi
-}
-
-magic-c-space() {
-    magic-c-expand
-    zle self-insert
-}
-
-magic-c-enter() {
-    magic-c-expand
-    zle accept-line
-}
-
-# ---------- Yazi Explorer ----------
+if [[ -n "$ZSH_CLIPBOARD_CMD" ]]; then
+    alias -g C="| $ZSH_CLIPBOARD_CMD"
+fi
 
 _yazi_file_explorer() {
-  yazi
-  zle reset-prompt
+    yazi
+    zle reset-prompt
 }
 
-# ==============================================================================
-# Keybinding
-# ==============================================================================
-
-# ---------- Vim mode
-# bindkey -v
-
-# ---------- Copy command
 zle -N copy-command
 bindkey '^Xc' copy-command
 
-# ---------- Public Copy
-zle -N magic-c-space
-zle -N magic-c-enter
-
-bindkey ' ' magic-c-space
-bindkey '^M' magic-c-enter
-
-# ---------- Yazi Explorer
 zle -N _yazi_file_explorer
 bindkey '^Xe' _yazi_file_explorer
+

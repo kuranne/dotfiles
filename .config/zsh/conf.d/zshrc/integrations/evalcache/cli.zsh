@@ -22,3 +22,7 @@ fi
 if command -v direnv > /dev/null; then
   _evalcache direnv direnv hook zsh
 fi
+
+if command -v brew > /dev/null; then
+  _evalcache brew brew shellenv zsh
+fi

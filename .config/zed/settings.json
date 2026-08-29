@@ -8,6 +8,11 @@
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
   // Discord Rich Presence Config
+  "search": {
+    "whole_word": false
+  },
+  "file_scan_depth": 5,
+  "use_smartcase_search": true,
   "application_id": "1263505205522337886",
 
   // Zed Config

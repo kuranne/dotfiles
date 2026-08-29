@@ -1,5 +1,5 @@
-if [[ "$TERM_PROGRAM" == "vscode" ]]; then
-    export STARSHIP_CONFIG="$XDG_CONFIG_HOME/starship/vscode.toml"
+if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}"/starship/"${TERM_PROGRAM}.toml" ]]; then
+    export STARSHIP_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"/starship/"${TERM_PROGRAM}.toml"
 else
-    export STARSHIP_CONFIG="$XDG_CONFIG_HOME/starship/default.toml"
+    export STARSHIP_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"/starship/default.toml
 fi

@@ -29,6 +29,7 @@ truncation_length = 4
 "Music" = " "
 "Pictures" = " "
 "Developer" = "󰲋 "
+"Projects" = " "
 "Others" = " "
 
 [username]
@@ -149,6 +150,7 @@ symbol = ""
 format = "[ $symbol( $version) ]($style)"
 
 [bun]
+symbol = "" 
 detect_files = ["bun.lock", "bun.lockb"]
 
 [c]

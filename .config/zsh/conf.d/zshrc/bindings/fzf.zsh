@@ -10,7 +10,7 @@ local plugins=(
 for plugin in "${plugins[@]}"; do
     for prefix in "${prefixes[@]}"; do
       if [[ -f "$prefix/$plugin" ]]; then
-        source_files+=("$prefix/$plugin")
+        source "$prefix/$plugin"
         break
       fi
     done
