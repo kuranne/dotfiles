@@ -69,18 +69,30 @@ export WGETRC="$XDG_CONFIG_HOME/wget/wgetrc"
 
 export CLAUDE_CONFIG_DIR="$XDG_CONFIG_HOME/claude"
 
-# ---------- Editor ----------
-export EDITOR="nvim"
-export VISUAL="vim"
-
 # ---------- Other ----------
 # Homebrew prefix
-if [[ -d "/opt/homebrew" ]]; then
-    export BREW_PREFIX="/opt/homebrew"
-elif [[ -x "/usr/local/bin/brew" ]]; then
-    export BREW_PREFIX="/usr/local"
-elif [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
-    export BREW_PREFIX="/home/linuxbrew/.linuxbrew"
-elif [[ -d "/opt/linuxbrew/.linuxbrew" ]]; then
-    export BREW_PREFIX="/opt/linuxbrew/.linuxbrew"
+_export_brew_prefix() {
+    local brew_bindir=(
+        /opt/homebrew
+        /usr/local/bin/brew
+        /home/linuxbrew/.linuxbrew
+        /opt/linuxbrew/.linuxbrew
+    )
+
+    for bbd in $brew_bindir; do
+        if [[ -e "$bbd" ]]; then
+            export BREW_PREFIX="$bbd"
+            return 0
+        fi
+    done
+}
+
+if [[ -z "$BREW_PREFIX" ]]; then
+    _export_brew_prefix
+fi
+
+if [[ -f "${ZDOTDIR}/conf.d/zshenv/${TERM_PROGRAM}.zsh" ]]; then
+    source "${ZDOTDIR}/conf.d/zshenv/${TERM_PROGRAM}.zsh"
+else
+    source "${ZDOTDIR}/conf.d/zshenv/default.zsh"
 fi

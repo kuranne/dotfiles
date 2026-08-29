@@ -1,0 +1,1 @@
+[[ -f "${ZDOTDIR}/conf.d/env/paths.zsh" ]] && source "${ZDOTDIR}/conf.d/env/paths.zsh"

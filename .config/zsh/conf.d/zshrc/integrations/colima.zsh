@@ -58,7 +58,6 @@ if command -v colima >/dev/null; then
 
         __colima_debug "About to call: eval ${requestComp}"
 
-        # Use eval to handle any environment variables and such
         out=$(eval ${requestComp} 2>/dev/null)
         __colima_debug "completion output: ${out}"
 
@@ -180,7 +179,7 @@ if command -v colima >/dev/null; then
             return $result
         else
             __colima_debug "Calling _describe"
-            if eval _describe $keepOrder "completions" completions $flagPrefix $noSpace; then
+            if _describe $keepOrder "completions" completions $flagPrefix $noSpace; then
                 __colima_debug "_describe found some completions"
 
                 # Return the success of having called _describe

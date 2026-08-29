@@ -1,4 +1,4 @@
-# Helper function to cache init scripts
+# Helper function to cache eval
 _evalcache() {
   local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/eval"
   [[ ! -d $cache_dir ]] && mkdir -p "$cache_dir"
@@ -11,9 +11,6 @@ _evalcache() {
   source "$cache_file"
 }
 
-for evalcache_files in "$ZSHRC_CONF"/integrations/evalcache/*; do
+for evalcache_files in "${ZDOTDIR}"/conf.d/zshrc/integrations/evalcache/*; do
     [[ -f "$evalcache_files" ]] && source "$evalcache_files"
 done
-
-# Clean up helper
-unset -f _evalcache

@@ -2,13 +2,15 @@
 # INTERACTIVE SHELL CONFIGURATION (.zshrc)
 # ==============================================================================
 
-# Load all environment variables
+# Load all enironment variables
+# and double check the path ordering in correctly
 for env_file in "$ZDOTDIR"/conf.d/env/*.zsh; do
-  [[ -f "$env_file" ]] && source "$env_file"
+    [[ -f "$env_file" ]] && source "$env_file"
 done
 
-if [[ "$TERM_PROGRAM" == "Apple_Terminal" ]]; then
-  [[ -f "${ZDOTDIR}/conf.d/zshrc/AppleTerminal.zsh" ]] && source "${ZDOTDIR}/conf.d/zshrc/AppleTerminal.zsh"
+# Source zshrc config files
+if [[ -f "${ZDOTDIR}/conf.d/zshrc/${TERM_PROGRAM}.zsh" ]]; then
+    source "${ZDOTDIR}/conf.d/zshrc/${TERM_PROGRAM}.zsh"
 else
-  [[ -f "${ZDOTDIR}/conf.d/zshrc/default.zsh" ]] && source "${ZDOTDIR}/conf.d/zshrc/default.zsh"
+    source "${ZDOTDIR}/conf.d/zshrc/default.zsh"
 fi

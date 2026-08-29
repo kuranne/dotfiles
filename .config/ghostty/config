@@ -24,7 +24,7 @@ theme = Afterglow
 
 # Background
 background = 141414
-background-opacity = 0.95
+background-opacity = 0.80
 background-opacity-cells = true
 background-blur = 10
 
