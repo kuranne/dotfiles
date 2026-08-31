@@ -36,11 +36,9 @@ function history() {
 
 # Dotfiles
 alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
+compdef dotfiles=git
 
 # Clear Cache
 alias clear-cache="rm -rf $XDG_CACHE_HOME/zsh/*"
 alias clear-evalcache="rm -rf $XDG_CACHE_HOME/zsh/eval/*"
 alias clear-command-not-found="rm $XDG_CACHE_HOME/zsh/cnf.db*"
-
-# Docker
-alias ubuntu='podman run --platform linux/amd64 --rm -it -v "$(pwd)":/workspace localhost/elf64-asm-ubuntu:latest bash'

@@ -26,3 +26,6 @@ fi
 if command -v brew > /dev/null; then
   _evalcache brew brew shellenv zsh
 fi
+if command -v run > /dev/null; then
+    _evalcache run run --completion zsh
+fi
