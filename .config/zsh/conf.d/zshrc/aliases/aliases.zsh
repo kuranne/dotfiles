@@ -42,3 +42,10 @@ compdef dotfiles=git
 alias clear-cache="rm -rf $XDG_CACHE_HOME/zsh/*"
 alias clear-evalcache="rm -rf $XDG_CACHE_HOME/zsh/eval/*"
 alias clear-command-not-found="rm $XDG_CACHE_HOME/zsh/cnf.db*"
+
+if [[ -n "$ZSH_CLIPBOARD_CMD" ]]; then
+    alias -g C="| $ZSH_CLIPBOARD_CMD"
+fi
+
+# Passc
+autoload -Uz passc
