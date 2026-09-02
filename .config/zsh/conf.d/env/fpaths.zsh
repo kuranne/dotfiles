@@ -1,6 +1,6 @@
-typeset -U path fpath
+typeset -U fpath
 fpath=(
-    ${ZDOTDIR}/functions
+    ${ZDOTDIR}/lazy
     $DOCKER_CONFIG/completions
     $fpath
 )

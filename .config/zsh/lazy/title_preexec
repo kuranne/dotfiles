@@ -1,0 +1,8 @@
+local CMD="${1%% *}"
+local CURRENT_DIR="${PWD:t}"
+
+if [[ "$CMD" == "ssh" ]]; then
+    printf "\033]0;  %s\007" "$1"
+else
+    printf "\033]0;  %s (%s)\007" "$CMD" "$CURRENT_DIR"
+fi

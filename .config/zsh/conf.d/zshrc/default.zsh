@@ -1,22 +1,30 @@
-# Load zsh setopt and shell setting
-for f in "${ZDOTDIR}"/conf.d/setting/*.zsh; do
+# Load setopt and shell setting
+# This should be call once on session start and only one time (assume.)
+for f in "${ZDOTDIR}"/conf.d/option/*.zsh(N); do
     source "$f"
 done
 
+# This will include paths.zsh which was called, call this again to ensure paths would order in right sequence.
+for f in "${ZDOTDIR}"/conf.d/env/*.zsh(N); do
+    source $f
+done
+
+# Main source files function
+# This function load:
+#   1. all zsh file zshrc conf.d
+#   2. files in source_files variable
 _source_zsh_config_files() {
     local source_files
-    typeset -U source_files=()
-    local scripts_extension=(
-        $ZDOTDIR/conf.d/zshrc/plugins/*
-        $ZDOTDIR/conf.d/zshrc/integrations/*
-        $ZDOTDIR/conf.d/zshrc/aliases/*
-        $ZDOTDIR/conf.d/zshrc/bindings/*
+
+    # Put the path of files in bracket
+    typeset -U source_files=(
+    # ==========
+
+    # ==========
     )
 
-    for scripts in "${scripts_extension[@]}"; do
-        for script in $scripts; do
-            source_files+=("$script")
-        done
+    for script in "${ZDOTDIR}"/conf.d/zshrc/{plugins,integrations,aliases,bindings,functions}/*.zsh(N); do
+        source "$script"
     done
 
     for s in $source_files; do
@@ -25,3 +33,5 @@ _source_zsh_config_files() {
 }
 
 _source_zsh_config_files
+
+unset _deferred_compdefs

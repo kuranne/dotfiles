@@ -1,8 +1,0 @@
-_fzf_cd_widget() {
-  local dir
-  dir=$(fd --type d --hidden --exclude ".git" --max-depth 4 . | fzf --preview 'eza -la --icons --group-directories-first {}')
-  if [[ -n "$dir" ]]; then
-    cd "$dir"
-  fi
-  zle reset-prompt
-}
