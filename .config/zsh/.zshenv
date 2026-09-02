@@ -18,7 +18,8 @@ export XDG_BIN_HOME="$HOME/.local/bin"
 # --- zsh
 [[ ! -d "$XDG_CACHE_HOME/zsh" ]] && mkdir -p "$XDG_CACHE_HOME/zsh"
 export ZSH_COMPDUMP="$XDG_CACHE_HOME/zsh/zcompdump-$ZSH_VERSION"
-
+export ZSH_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/cache"
+[[ ! -d "$ZSH_CACHE_DIR/completions" ]] && mkdir -p "$ZSH_CACHE_DIR/completions"
 # --- Lang
 export CARGO_HOME="$XDG_DATA_HOME/cargo"
 export RUSTUP_HOME="$XDG_DATA_HOME/rustup"
@@ -70,6 +71,25 @@ export WGETRC="$XDG_CONFIG_HOME/wget/wgetrc"
 export CLAUDE_CONFIG_DIR="$XDG_CONFIG_HOME/claude"
 
 # ---------- Other ----------
+# Terminal Define
+
+_detect_terminal() {
+    local terminal_name
+    if [[ -n "$KITTY_PID" || "$TERM" == "xterm-kitty" ]]; then
+        terminal_name="kitty"
+    elif [[ -n "$ALACRITTY_LOG" || "$TERM" == "alacritty" ]]; then
+        terminal_name="alacritty"
+    elif [[ -n "$TERM_PROGRAM" ]]; then
+        terminal_name=${TERM_PROGRAM%%.*}
+    else
+        terminal_name="default"
+    fi
+
+    echo ${terminal_name}
+}
+
+export MY_TERM="$(_detect_terminal)"
+unset -f _detect_terminal
 # Homebrew prefix
 _export_brew_prefix() {
     local brew_bindir=(
@@ -91,8 +111,8 @@ if [[ -z "$BREW_PREFIX" ]]; then
     _export_brew_prefix
 fi
 
-if [[ -f "${ZDOTDIR}/conf.d/zshenv/${TERM_PROGRAM}.zsh" ]]; then
-    source "${ZDOTDIR}/conf.d/zshenv/${TERM_PROGRAM}.zsh"
+if [[ -f "${ZDOTDIR}/conf.d/zshenv/${MY_TERM}.zsh" ]]; then
+    source "${ZDOTDIR}/conf.d/zshenv/${MY_TERM}.zsh"
 else
     source "${ZDOTDIR}/conf.d/zshenv/default.zsh"
 fi

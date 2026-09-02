@@ -1,2 +1,6 @@
 *
 .DS_Store
+
+# zsh_config
+**/zsh/bundle/**
+*.zwc

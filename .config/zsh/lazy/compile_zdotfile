@@ -1,0 +1,27 @@
+compile_zdotfile() {
+    setopt localoptions extendedglob
+    local target_dir="${1:-${ZDOTDIR:-$HOME/.config/zsh}/bundle}"
+    local source_dir="${ZDOTDIR:-$HOME/.config/zsh}"
+    local compiled_count=0
+
+    echo "==> Compiling Zsh files with zcompile..."
+
+    # 1. Compile bundled dotfiles in target_dir if it exists
+    if [[ -d "$target_dir" ]]; then
+        for f in "$target_dir"/.z*~*.zwc(N.) "$target_dir"/*.zsh~*.zwc(N.); do
+            if [[ ! -f "${f}.zwc" || "$f" -nt "${f}.zwc" ]]; then
+                zcompile "$f"
+                echo "Compiled bundle: ${f:t}.zwc (in ${target_dir:t})"
+                ((compiled_count++))
+            fi
+        done
+    fi
+
+    if [[ $compiled_count -eq 0 ]]; then
+        echo "All Zsh configurations and bundles are up to date."
+    else
+        echo "==> Compilation finished ($compiled_count files compiled)."
+    fi
+}
+
+compile_zdotfile "$@"

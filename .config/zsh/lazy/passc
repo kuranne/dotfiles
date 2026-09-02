@@ -22,3 +22,4 @@ passc() {
 }
 
 compdef passc=pass
+passc "$@"

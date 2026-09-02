@@ -68,8 +68,9 @@ if [ ! -d "$ZINIT_HOME" ]; then
     print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
     command mkdir -p "$(dirname $ZINIT_HOME)" && command git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME" && print -P "%F{33} %F{34}Installation successful.%f%b" || print -P "%F{160} The clone has failed.%f%b"
 fi
-
 source "${ZINIT_HOME}/zinit.zsh"
+
+zinit light zsh-users/zsh-completions
 
 _load_zinit_extensions
 
@@ -83,11 +84,14 @@ else
     compinit -d "$ZSH_COMPDUMP"
 fi
 
+if (( ${#_deferred_compdefs[@]} )); then
+    for cd_cmd in "${_deferred_compdefs[@]}"; do
+        eval "compdef $cd_cmd"
+    done
+fi
+
 zinit cdreplay -q
 
-# --- zsh extensions
-zinit light zsh-users/zsh-completions
 zinit light hlissner/zsh-autopair
 zinit light zsh-users/zsh-autosuggestions
 zinit light zsh-users/zsh-syntax-highlighting
-# ---

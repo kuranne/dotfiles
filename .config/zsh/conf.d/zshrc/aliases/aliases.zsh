@@ -19,7 +19,8 @@ fi
 
 # Wrapper for history command to support -c option to clear history.
 unalias history 2>/dev/null
-function history() {
+
+history() {
     local clear list
     zparseopts -E c=clear l=list
 
@@ -47,5 +48,4 @@ if [[ -n "$ZSH_CLIPBOARD_CMD" ]]; then
     alias -g C="| $ZSH_CLIPBOARD_CMD"
 fi
 
-# Passc
-autoload -Uz passc
+autoload -Uz passc compile_zdotfile

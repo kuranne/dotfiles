@@ -1,4 +1,0 @@
-_yazi_file_explorer() {
-    yazi
-    zle reset-prompt
-}
