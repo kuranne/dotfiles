@@ -1,4 +1,68 @@
-ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+_load_zinit_extensions() {
+    local libsnippets=(
+        OMZL::key-bindings.zsh
+    )
+
+    local plugins=(
+        OMZP::extract
+        OMZP::copyfile
+    )
+
+    local plugins_with_command=(
+        OMZP::brew
+        OMZP::docker
+        OMZP::docker-compose
+        OMZP::eza
+        OMZP::git
+        OMZP::node
+        OMZP::rust
+        OMZP::sudo
+        Aloxaf/fzf-tab
+    )
+
+    typeset -A lib_deps=(
+        [git]="OMZL::git.zsh"
+    )
+
+    typeset -A cmd_overrides=(
+        [rust]="cargo"
+        [fzf-tab]="fzf"
+    )
+
+    _zinit_load() {
+        local target="$1"
+        if [[ "$target" == *"::"* || "$target" == https://* || "$target" == http://* ]]; then
+            zinit snippet "$target"
+        else
+            zinit light "$target"
+        fi
+    }
+
+    for lib in "${libsnippets[@]}"; do
+        _zinit_load "$lib"
+    done
+
+    for item in "${plugins[@]}"; do
+        _zinit_load "$item"
+    done
+
+    for item in "${plugins_with_command[@]}"; do
+        local name="${${item##*::}##*/}"
+
+        local cmd="${cmd_overrides[$name]:-$name}"
+
+        if (( $+commands[$cmd] )); then
+            # Load library dependency if mapped
+            if [[ -n "${lib_deps[$name]}" ]]; then
+                _zinit_load "${lib_deps[$name]}"
+            fi
+
+            _zinit_load "$item"
+        fi
+    done
+
+    unfunction _zinit_load
+}
 
 if [ ! -d "$ZINIT_HOME" ]; then
     print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
@@ -7,22 +71,7 @@ fi
 
 source "${ZINIT_HOME}/zinit.zsh"
 
-zinit snippet OMZL::key-bindings.zsh
-
-zinit snippet OMZP::git
-zinit snippet OMZP::docker
-zinit snippet OMZP::docker-compose
-zinit snippet OMZP::brew
-zinit snippet OMZP::extract
-zinit snippet OMZP::copyfile
-zinit snippet OMZP::sudo
-zinit snippet OMZP::tmux
-zinit snippet OMZP::eza
-zinit snippet OMZP::node
-zinit snippet OMZP::rust
-
-zinit light zsh-users/zsh-completions
-zinit light hlissner/zsh-autopair
+_load_zinit_extensions
 
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/cache"
@@ -36,7 +85,9 @@ fi
 
 zinit cdreplay -q
 
+# --- zsh extensions
+zinit light zsh-users/zsh-completions
+zinit light hlissner/zsh-autopair
 zinit light zsh-users/zsh-autosuggestions
-ZSH_AUTOSUGGEST_CLEAR_WIDGETS+=(accept-line buffer-empty)
-
 zinit light zsh-users/zsh-syntax-highlighting
+# ---

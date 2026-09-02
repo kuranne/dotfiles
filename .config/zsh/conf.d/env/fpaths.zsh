@@ -1,5 +1,6 @@
 typeset -U path fpath
 fpath=(
-  $DOCKER_CONFIG/completions
-  $fpath
+    ${ZDOTDIR}/functions
+    $DOCKER_CONFIG/completions
+    $fpath
 )
