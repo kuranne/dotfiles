@@ -23,5 +23,3 @@ compile_zdotfile() {
         echo "==> Compilation finished ($compiled_count files compiled)."
     fi
 }
-
-compile_zdotfile "$@"
