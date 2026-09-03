@@ -11,6 +11,6 @@ _evalcache() {
   source "$cache_file"
 }
 
-for evalcache_files in "${ZDOTDIR}"/conf.d/zshrc/integrations/evalcache/*; do
+for evalcache_files in "${ZDOTDIR}"/conf.d/zshrc/integrations/evalcache/*.zsh(N); do
     [[ -f "$evalcache_files" ]] && source "$evalcache_files"
 done

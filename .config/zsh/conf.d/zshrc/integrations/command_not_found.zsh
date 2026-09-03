@@ -123,32 +123,4 @@ command_not_found_handler() {
 
     return 127
 }
-
-## Clear SQLite command-not-found cache database.
-cnf-clear-cache() {
-    rm -f "$CNF_DB_PATH" "${CNF_DB_PATH}-wal" "${CNF_DB_PATH}-shm"
-    echo "Command-not-found cache cleared!"
-}
-
-## Display command-not-found cache statistics.
-cnf-stats() {
-    [[ ! -f "$CNF_DB_PATH" ]] && { echo "No cache database found."; return 0; }
-    echo "=== Command Not Found Cache Stats ==="
-    sqlite3 -header -column "$CNF_DB_PATH" <<'EOF'
-SELECT source, count(*) AS total_entries, sum(hit_count) AS total_hits
-FROM cnf_cache GROUP BY source;
-
-SELECT cmd, source, hit_count, datetime(updated_at, 'unixepoch', 'localtime') AS last_seen
-FROM cnf_cache
-ORDER BY hit_count DESC
-LIMIT 10;
-EOF
-}
-
-## Prune command-not-found cache entries older than N days.
-cnf-prune() {
-    local days="${1:-30}"
-    [[ ! -f "$CNF_DB_PATH" ]] && return 0
-    sqlite3 "$CNF_DB_PATH" "DELETE FROM cnf_cache WHERE updated_at < strftime('%s', 'now', '-$days days'); VACUUM;" >/dev/null 2>&1
-    echo "Pruned entries older than $days days."
-}
+autoload -Uz cnf-clear-cache cnf-stats cnf-prune

@@ -7,6 +7,8 @@ macos-icon = custom-style
 macos-icon-ghost-color = #B9B9B9
 macos-icon-screen-color = #000000
 
+macos-option-as-alt = true
+
 # Performance
 quit-after-last-window-closed = true
 

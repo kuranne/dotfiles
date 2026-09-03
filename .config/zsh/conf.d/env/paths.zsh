@@ -12,13 +12,13 @@ load_paths() {
   }
 
   # --- OS-specific paths ---
-  if [[ $(uname) == "Darwin" ]]; then
+  if [[ "$OSTYPE" == darwin* ]]; then
       local macos_paths=(
           $HOME/Library/Android/sdk/emulator
       )
 
       _add_paths_to_target_paths "${macos_paths[@]}"
-  elif [[ $(uname) == "Linux" ]]; then
+  elif [[ "$OSTYPE" == linux* ]]; then
       local linux_paths=(
           $HOME/Android/Sdk/emulator
       )

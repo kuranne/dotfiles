@@ -19,21 +19,7 @@ fi
 
 # Wrapper for history command to support -c option to clear history.
 unalias history 2>/dev/null
-
-history() {
-    local clear list
-    zparseopts -E c=clear l=list
-
-    if [[ -n "$clear" ]]; then
-        echo -n >| "$HISTFILE"
-        fc -p "$HISTFILE"
-        echo >&2 "History cleared. Reload session to take effect."
-    elif [[ -n "$list" ]]; then
-        builtin fc "$@"
-    else
-        [[ ${@[-1]-} = *[0-9]* ]] && builtin fc -l "$@" || builtin fc -l "$@" 1
-    fi
-}
+autoload -Uz history
 
 # Dotfiles
 alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
@@ -48,4 +34,4 @@ if [[ -n "$ZSH_CLIPBOARD_CMD" ]]; then
     alias -g C="| $ZSH_CLIPBOARD_CMD"
 fi
 
-autoload -Uz passc compile_zdotfile
+autoload -Uz passc

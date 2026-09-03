@@ -1,0 +1,6 @@
+cnf-clear-cache() {
+    typeset -g CNF_DB_PATH="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/cnf.db"
+    rm -f "$CNF_DB_PATH" "${CNF_DB_PATH}-wal" "${CNF_DB_PATH}-shm"
+    echo "Command-not-found cache cleared!"
+}
+cnf-clear-cache "$@"

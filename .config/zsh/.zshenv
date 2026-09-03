@@ -74,21 +74,17 @@ export CLAUDE_CONFIG_DIR="$XDG_CONFIG_HOME/claude"
 # Terminal Define
 
 _detect_terminal() {
-    local terminal_name
     if [[ -n "$KITTY_PID" || "$TERM" == "xterm-kitty" ]]; then
-        terminal_name="kitty"
+        export MY_TERM="kitty"
     elif [[ -n "$ALACRITTY_LOG" || "$TERM" == "alacritty" ]]; then
-        terminal_name="alacritty"
+        export MY_TERM="alacritty"
     elif [[ -n "$TERM_PROGRAM" ]]; then
-        terminal_name=${TERM_PROGRAM%%.*}
+        export MY_TERM="${TERM_PROGRAM%%.*}"
     else
-        terminal_name="default"
+        export MY_TERM="default"
     fi
-
-    echo ${terminal_name}
 }
-
-export MY_TERM="$(_detect_terminal)"
+_detect_terminal
 unset -f _detect_terminal
 # Homebrew prefix
 _export_brew_prefix() {

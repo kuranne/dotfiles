@@ -1,0 +1,6 @@
+fcd() {
+    local dir
+    dir=$(fd --type d --hidden --exclude ".git" --max-depth 4 . "${1:-.}" | fzf --preview 'eza -la --icons --group-directories-first {}')
+    [[ -n "$dir" ]] && cd "$dir"
+}
+fcd "$@"
