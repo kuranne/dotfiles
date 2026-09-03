@@ -1,281 +1,619 @@
 bundle_zdotfile() {
-    local target_dir="${1:-${ZDOTDIR:-$HOME/.config/zsh}/bundle}"
-    local source_dir="${ZDOTDIR:-$HOME/.config/zsh}"
-    local timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
+    setopt localoptions extendedglob nullglob numericglobsort
 
-    mkdir -p "$target_dir" || {
-        echo >&2 "Error: Failed to create bundle directory: $target_dir"
+    local opt_root=""
+    local opt_out=""
+    local opt_compile=0
+    local opt_strict=0
+    local opt_verbose=0
+    local -a positional=()
+
+    while (( $# )); do
+        case "$1" in
+            --help|-h)
+                print -u2 "Usage: bundle_zdotfile [options] [target_dir | input_files...]"
+                print -u2 ""
+                print -u2 "Options:"
+                print -u2 "  --root <dir>          Root boundary for inlining (auto-detected if omitted)"
+                print -u2 "  -o, --output <path>   Output file or target bundle directory"
+                print -u2 "  -c, --compile         Compile generated bundles with zcompile"
+                print -u2 "  --strict              Fail on unresolvable dynamic sources"
+                print -u2 "  -v, --verbose         Verbose progress logging"
+                print -u2 "  -h, --help            Show this help message"
+                return 0
+                ;;
+            --root)
+                shift
+                opt_root="${1:A}"
+                ;;
+            --root=*)
+                opt_root="${${1#--root=}:A}"
+                ;;
+            -o|--output)
+                shift
+                opt_out="$1"
+                ;;
+            --output=*)
+                opt_out="${1#--output=}"
+                ;;
+            -c|--compile)
+                opt_compile=1
+                ;;
+            --strict)
+                opt_strict=1
+                ;;
+            -v|--verbose)
+                opt_verbose=1
+                ;;
+            --)
+                shift
+                positional+=( "$@" )
+                break
+                ;;
+            -*)
+                print -u2 "bundle_zdotfile: error: unknown option: $1"
+                return 2
+                ;;
+            *)
+                positional+=( "$1" )
+                ;;
+        esac
+        shift
+    done
+
+    # -------------------------------------------------------------------------
+    # Helper Functions (Pure Zsh, Zero eval)
+    # -------------------------------------------------------------------------
+
+    typeset -ga STACK=()
+    typeset -gA LOOP_VARS=()
+    typeset -ga TRANSCRIPT_MANIFEST=()
+
+    _warn()  { print -u2 -- "bundle_zdotfile: warning: $*"; }
+    _error() { print -u2 -- "bundle_zdotfile: error: $*"; }
+
+    # Detect project / configuration root from a reference file
+    _detect_root() {
+        local f="${1:A}"
+        local d="${f:h}"
+        while [[ -n "$d" && "$d" != "/" && "$d" != "$HOME" ]]; do
+            if [[ -d "$d/conf.d" || -f "$d/.zshrc" || -f "$d/.zshenv" || -d "$d/.git" ]]; then
+                print -r -- "$d"
+                return 0
+            fi
+            d="${d:h}"
+        done
+        print -r -- "${f:h}"
+    }
+
+    _strip_quotes() {
+        local s="$1"
+        s="${s##[[:space:]]#}"
+        s="${s%%[[:space:]]#}"
+        s="${s//\"/}"
+        s="${s//\'/}"
+        print -r -- "$s"
+    }
+
+    # Safe variable resolution: handles known parameters and loop variables without eval
+    _resolve_vars() {
+        local s="$1" cur_root="$2" name value token
+
+        [[ "$s" != *'$('* && "$s" != *'`'* ]] || return 2
+
+        # Replace ${ZDOTDIR} / $ZDOTDIR
+        if [[ -n "$cur_root" ]]; then
+            s="${s//\$\{ZDOTDIR\}/$cur_root}"
+            s="${s//\$ZDOTDIR/$cur_root}"
+        fi
+
+        while [[ "$s" =~ '\$\{([A-Za-z_][A-Za-z0-9_]*)\}' ]]; do
+            token="$MATCH"
+            name="${match[1]}"
+            if (( ${+LOOP_VARS[$name]} )); then
+                value="${LOOP_VARS[$name]}"
+            elif (( ${+parameters[$name]} )); then
+                value="${(P)name}"
+            elif [[ "$name" == "ZDOTDIR" && -n "$cur_root" ]]; then
+                value="$cur_root"
+            else
+                return 2
+            fi
+            s="${s//$token/$value}"
+        done
+
+        while [[ "$s" =~ '\$([A-Za-z_][A-Za-z0-9_]*)' ]]; do
+            token="$MATCH"
+            name="${match[1]}"
+            if (( ${+LOOP_VARS[$name]} )); then
+                value="${LOOP_VARS[$name]}"
+            elif (( ${+parameters[$name]} )); then
+                value="${(P)name}"
+            elif [[ "$name" == "ZDOTDIR" && -n "$cur_root" ]]; then
+                value="$cur_root"
+            else
+                return 2
+            fi
+            s="${s//$token/$value}"
+        done
+
+        # Expand tilde
+        if [[ "$s" == '~' ]]; then
+            s="$HOME"
+        elif [[ "$s" == '~/'* ]]; then
+            s="$HOME/${s#~/}"
+        fi
+
+        print -r -- "$s"
+    }
+
+    # Pure recursive brace expansion without eval
+    _brace_expand() {
+        local s="$1"
+        local i ch depth=0 start=0 end=0
+        for (( i=1; i<=${#s}; i++ )); do
+            ch="${s[i]}"
+            if [[ "$ch" == "{" ]]; then
+                (( depth++ ))
+                (( depth == 1 )) && start=$i
+            elif [[ "$ch" == "}" ]] && (( depth > 0 )); then
+                (( depth-- ))
+                if (( depth == 0 )); then
+                    end=$i
+                    break
+                fi
+            fi
+        done
+
+        if (( start == 0 || end == 0 )); then
+            print -r -- "$s"
+            return
+        fi
+
+        local prefix="${s[1,start-1]}"
+        local suffix="${s[end+1,-1]}"
+        local inner="${s[start+1,end-1]}"
+
+        local -a parts=()
+        local current=""
+        depth=0
+        for (( i=1; i<=${#inner}; i++ )); do
+            ch="${inner[i]}"
+            if [[ "$ch" == "{" ]]; then
+                (( depth++ ))
+                current+="$ch"
+            elif [[ "$ch" == "}" ]] && (( depth > 0 )); then
+                (( depth-- ))
+                current+="$ch"
+            elif [[ "$ch" == "," ]] && (( depth == 0 )); then
+                parts+=( "$current" )
+                current=""
+            else
+                current+="$ch"
+            fi
+        done
+        parts+=( "$current" )
+
+        if (( ${#parts[@]} <= 1 )); then
+            print -r -- "$s"
+            return
+        fi
+
+        for p in "${parts[@]}"; do
+            while IFS= read -r expanded; do
+                print -r -- "$expanded"
+            done < <(_brace_expand "${prefix}${p}${suffix}")
+        done
+    }
+
+    # Expand glob patterns safely without eval
+    _expand_globs() {
+        local expr="$1" cur_root="$2" base_dir="$3"
+        local p expanded word
+        local -a words matches
+
+        expr="$(_strip_quotes "$expr")"
+        words=( ${(z)expr} ) || return 2
+
+        for word in "${words[@]}"; do
+            p="$(_resolve_vars "$word" "$cur_root")" || return 2
+            while IFS= read -r expanded; do
+                # Make relative paths absolute relative to base_dir
+                if [[ "$expanded" != /* && "$expanded" != ~* ]]; then
+                    expanded="$base_dir/$expanded"
+                fi
+
+                # Expand with null glob (N)
+                if [[ "$expanded" == *'('*')'* ]]; then
+                    matches=( ${~expanded} )
+                else
+                    matches=( ${~expanded}(N) )
+                fi
+                if (( ${#matches[@]} )); then
+                    for m in "${matches[@]}"; do
+                        if [[ -d "$m" ]]; then
+                            for sub in "$m"/*.zsh(N); do
+                                [[ -f "$sub" ]] && print -r -- "$sub"
+                            done
+                        elif [[ -f "$m" ]]; then
+                            print -r -- "$m"
+                        fi
+                    done
+                else
+                    # Literal non-glob word
+                    if [[ "$expanded" != *[\*\?\[\]]* && -f "$expanded" ]]; then
+                        print -r -- "$expanded"
+                    fi
+                fi
+            done < <(_brace_expand "$p")
+        done
+    }
+
+    _in_stack() {
+        local wanted="$1" x
+        for x in "${STACK[@]}"; do
+            [[ "$x" == "$wanted" ]] && return 0
+        done
         return 1
     }
 
-    echo "==> Bundling Zsh configurations from '$source_dir' to '$target_dir'..."
-
-    # Helper function to append a section with clean newlines and demarcation banners
-    _bundle_append() {
-        local src="$1"
-        local dest="$2"
-        local label="$3"
-        local strip_conf_sources="${4:-false}"
-
-        [[ ! -f "$src" ]] && return 0
-
-        print -r -- "" >> "$dest"
-        print -r -- "# >>> [${label}] ${src:t} >>>" >> "$dest"
-
-        local in_conf_loop=false
-        while IFS= read -r line || [[ -n "$line" ]]; do
-            if [[ "$strip_conf_sources" == "true" ]]; then
-                if [[ "$line" =~ '^[[:space:]]*for[[:space:]]+[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]+in[[:space:]]+.*conf\.d/' ]]; then
-                    in_conf_loop=true
-                    print -r -- "# [inlined] $line" >> "$dest"
-                    continue
-                fi
-                if [[ "$in_conf_loop" == "true" ]]; then
-                    print -r -- "# [inlined] $line" >> "$dest"
-                    if [[ "$line" =~ '^[[:space:]]*done[[:space:]]*$' ]]; then
-                        in_conf_loop=false
-                    fi
-                    continue
-                fi
-                if [[ "$line" =~ 'source[[:space:]]+.*conf\.d/' ]]; then
-                    print -r -- "# [inlined] $line" >> "$dest"
-                    continue
-                fi
-            fi
-            print -r -- "$line" >> "$dest"
-        done < "$src"
-
-        print -r -- "" >> "$dest"
-        print -r -- "# <<< [${label}] ${src:t} <<<" >> "$dest"
+    # Check if a line is a fast-path loader guard that should be stripped
+    _is_loader_guard() {
+        local line="$1" out_dest="$2"
+        # Match pattern: [[ -f ... ]] && source ... && return
+        if [[ "$line" =~ '^[[:space:]]*\[\[[[:space:]]+-[fd][[:space:]]+.+\]\][[:space:]]*&&[[:space:]]*(source|\.)[[:space:]]+.+&&[[:space:]]*return' ]]; then
+            return 0
+        fi
+        # Match explicit bundle loader
+        if [[ "$line" =~ 'bundle/\.z' ]]; then
+            return 0
+        fi
+        if [[ -n "$out_dest" && "$line" =~ "${out_dest:t}" && "$line" =~ 'return' ]]; then
+            return 0
+        fi
+        return 1
     }
 
-    # ==============================================================================
-    # 1. BUNDLE .zshenv
-    # ==============================================================================
-    local zshenv_out="$target_dir/.zshenv"
-    cat <<EOF > "$zshenv_out"
-# ==============================================================================
-# BUNDLED ENVIRONMENT VARIABLES (.zshenv)
-# Auto-generated by bundle_zdotfile on $timestamp.
-# Do not edit this file directly; edit modular files in conf.d/ instead.
-# ==============================================================================
-EOF
+    # -------------------------------------------------------------------------
+    # Core Transpiler
+    # -------------------------------------------------------------------------
 
-    # Append base .zshenv without the final dynamic loader block
-    if [[ -f "$source_dir/.zshenv" ]]; then
-        print -r -- "" >> "$zshenv_out"
-        print -r -- "# >>> Base .zshenv >>>" >> "$zshenv_out"
-        local in_loader_block=false
+    _transpile_file() {
+        local src="$1" dest="$2" cur_root="$3" out_dest="$4"
+        local canonical="${src:A}"
+        local src_dir="${canonical:h}"
+
+        [[ -f "$canonical" ]] || return 0
+
+        # Cycle detection
+        if _in_stack "$canonical"; then
+            _warn "circular dependency detected on $canonical (skipping)"
+            return 0
+        fi
+
+        STACK+=( "$canonical" )
+
+        local rel_path="${canonical#$cur_root/}"
+        TRANSCRIPT_MANIFEST+=( "$rel_path" )
+
+        print -r -- "" >> "$dest"
+        print -r -- "# >>> [Transpiled: $rel_path] >>>" >> "$dest"
+
+        local in_for_loop=false
+        local -a for_files=()
+        local in_dynamic_if=false
+        local in_else=false
+        local dyn_var=""
+        local dyn_dir=""
+        local dyn_fallback=""
+        local line="" raw_target="" resolved="" target_canonical=""
+        local cond_target="" dir_expr=""
+
         while IFS= read -r line || [[ -n "$line" ]]; do
-            if [[ "$line" =~ '^[[:space:]]*if[[:space:]]+\[\[[[:space:]]+-f[[:space:]]+"\$\{ZDOTDIR\}/conf\.d/zshenv/' ]]; then
-                in_loader_block=true
+            # 0. Strip bundle fast-path loaders
+            if _is_loader_guard "$line" "$out_dest"; then
+                continue
             fi
-            if [[ "$in_loader_block" == "false" ]]; then
-                print -r -- "$line" >> "$zshenv_out"
-            fi
-            if [[ "$in_loader_block" == "true" && "$line" =~ '^[[:space:]]*fi[[:space:]]*$' ]]; then
-                in_loader_block=false
-            fi
-        done < "$source_dir/.zshenv"
-        print -r -- "# <<< Base .zshenv <<<" >> "$zshenv_out"
-    fi
 
-    # Append conf.d/zshenv/ (and paths.zsh)
-    print -r -- "" >> "$zshenv_out"
-    print -r -- "# >>> Environment Paths (conf.d/zshenv) >>>" >> "$zshenv_out"
-    if [[ -f "$source_dir/conf.d/env/paths.zsh" ]]; then
-        _bundle_append "$source_dir/conf.d/env/paths.zsh" "$zshenv_out" "conf.d/env/paths.zsh"
-    fi
-    # Check for any terminal-specific zshenv configs
-    for f in "$source_dir"/conf.d/zshenv/*.zsh(N); do
-        if [[ "${f:t}" != "default.zsh" ]]; then
-            local term_name="${${f:t}%.zsh}"
-            print -r -- "if [[ \"\$MY_TERM\" == \"$term_name\" ]]; then" >> "$zshenv_out"
-            _bundle_append "$f" "$zshenv_out" "conf.d/zshenv/${f:t}" true
-            print -r -- "fi" >> "$zshenv_out"
+            # 1. Generalized dynamic branch detection:
+            # Matches: if [[ -f <dir>/${VAR}.zsh ]]; then
+            #          if [[ -f "<dir>/${VAR}.zsh" ]]; then
+            #          if [[ -f <dir>/"$VAR.zsh" ]]; then
+            if [[ "$line" =~ '^[[:space:]]*if[[:space:]]+(\[\[|[[:space:]]*-f)[[:space:]]+-f[[:space:]]+(.+);[[:space:]]*then' ]] || \
+               [[ "$line" =~ '^[[:space:]]*if[[:space:]]+(\[\[|[[:space:]]*-f)[[:space:]]+-f[[:space:]]+(.+)[[:space:]]*\]\][[:space:]]*;?[[:space:]]*then' ]]; then
+                cond_target="${match[2]}"
+                cond_target="${cond_target%\]\]*}"
+                cond_target="$(_strip_quotes "$cond_target")"
+
+                if [[ "$cond_target" =~ '[\"'\''/]?\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?\.zsh[\"'\''/]?' ]]; then
+                    dyn_var="${match[1]}"
+                    dir_expr="${cond_target%/*}"
+                    dir_expr="$(_resolve_vars "$dir_expr" "$cur_root")"
+                    [[ "$dir_expr" == /* ]] || dir_expr="$src_dir/$dir_expr"
+                    dyn_dir="${dir_expr:A}"
+                    dyn_fallback=""
+                    in_dynamic_if=true
+                    in_else=false
+                    continue
+                fi
+            fi
+
+            # Inside dynamic if block: intercept fallback and synthesize case on 'fi'
+            if [[ "$in_dynamic_if" == "true" ]]; then
+                if [[ "$line" =~ '^[[:space:]]*else[[:space:]]*$' ]]; then
+                    in_else=true
+                    continue
+                fi
+
+                if [[ "$in_else" == "true" ]]; then
+                    if [[ "$line" =~ '^[[:space:]]*(source|\.)[[:space:]]+(.+)$' ]]; then
+                        local raw="${match[2]}"
+                        raw="${raw%%[[:space:]][#]*}"
+                        raw="$(_strip_quotes "$raw")"
+                        raw="$(_resolve_vars "$raw" "$cur_root")"
+                        [[ "$raw" == /* ]] || raw="$src_dir/$raw"
+                        dyn_fallback="${raw:A}"
+                        continue
+                    fi
+                fi
+
+                if [[ "$line" =~ '^[[:space:]]*fi[[:space:]]*$' ]]; then
+                    in_dynamic_if=false
+                    in_else=false
+                    printf 'case "$%s" in\n' "$dyn_var" >> "$dest"
+
+                    # Discover all profile files matching in the dynamic directory
+                    if [[ -d "$dyn_dir" ]]; then
+                        for f in "$dyn_dir"/*.zsh(N); do
+                            local fname="${f:t}"
+                            local fstem="${fname%.zsh}"
+                            if [[ "${f:A}" != "$dyn_fallback" && "$fname" != "default.zsh" ]]; then
+                                printf '    %s)\n' "$fstem" >> "$dest"
+                                _transpile_file "$f" "$dest" "$cur_root" "$out_dest"
+                                printf '        ;;\n' >> "$dest"
+                            fi
+                        done
+                    fi
+
+                    # Synthesize fallback / default under *)
+                    local fallback_file=""
+                    if [[ -n "$dyn_fallback" && -f "$dyn_fallback" ]]; then
+                        fallback_file="$dyn_fallback"
+                    elif [[ -d "$dyn_dir" && -f "$dyn_dir/default.zsh" ]]; then
+                        fallback_file="$dyn_dir/default.zsh"
+                    fi
+
+                    if [[ -n "$fallback_file" ]]; then
+                        printf '    *)\n' >> "$dest"
+                        _transpile_file "$fallback_file" "$dest" "$cur_root" "$out_dest"
+                        printf '        ;;\n' >> "$dest"
+                    fi
+
+                    printf 'esac\n' >> "$dest"
+                    continue
+                fi
+                continue
+            fi
+
+            # 2. Detect for loops that source files
+            if [[ "$line" =~ '^[[:space:]]*for[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]+in[[:space:]]+(.+);[[:space:]]*do' ]] || \
+               [[ "$line" =~ '^[[:space:]]*for[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]+in[[:space:]]+(.+)[[:space:]]*$' ]]; then
+                local loop_var="${match[1]}"
+                local expr="${match[2]}"
+                expr="${expr%;[[:space:]]*do}"
+                expr="${expr%;}"
+
+                local -a found_files
+                found_files=( "${(@f)$(_expand_globs "$expr" "$cur_root" "$src_dir")}" )
+                if (( ${#found_files[@]} )); then
+                    in_for_loop=true
+                    for_files=( "${found_files[@]}" )
+                    continue
+                fi
+            fi
+
+            if [[ "$in_for_loop" == "true" ]]; then
+                if [[ "$line" =~ '^[[:space:]]*done[[:space:]]*$' ]]; then
+                    in_for_loop=false
+                    for f in "${for_files[@]}"; do
+                        if [[ -f "$f" ]]; then
+                            _transpile_file "$f" "$dest" "$cur_root" "$out_dest"
+                        fi
+                    done
+                    for_files=()
+                fi
+                continue
+            fi
+
+            # 3. Detect direct source commands
+            if [[ "$line" =~ '^[[:space:]]*(\[\[[[:space:]]+-f[[:space:]]+.+\]\][[:space:]]*&&[[:space:]]*)?(source|\.)[[:space:]]+(.+)$' ]]; then
+                raw_target="${match[3]}"
+                raw_target="${raw_target%%[[:space:]][#]*}"
+                raw_target="$(_strip_quotes "$raw_target")"
+                resolved="$(_resolve_vars "$raw_target" "$cur_root")"
+                if [[ $? -eq 0 && -n "$resolved" ]]; then
+                    [[ "$resolved" == /* ]] || resolved="$src_dir/$resolved"
+                    target_canonical="${resolved:A}"
+                    # Inline if internal within the root boundary and exists
+                    if [[ "$target_canonical" == "$cur_root"/* && -f "$target_canonical" ]]; then
+                        _transpile_file "$target_canonical" "$dest" "$cur_root" "$out_dest"
+                        continue
+                    fi
+                fi
+            fi
+
+            # 4. Standard lines are preserved as-is
+            print -r -- "$line" >> "$dest"
+        done < "$canonical"
+
+        print -r -- "" >> "$dest"
+        print -r -- "# <<< [End: $rel_path] <<<" >> "$dest"
+
+        STACK[-1]=()
+        return 0
+    }
+
+    # -------------------------------------------------------------------------
+    # Bundle Single File Function
+    # -------------------------------------------------------------------------
+
+    _bundle_single() {
+        local in_file="$1" out_file="$2" cur_root="$3"
+        local timestamp="$(date '+%Y-%m-%d %H:%M:%S')"
+        local base_name="${in_file:t}"
+
+        [[ -f "$in_file" ]] || {
+            _error "input file does not exist: $in_file"
+            return 1
+        }
+
+        in_file="${in_file:A}"
+        [[ -n "$cur_root" ]] || cur_root="$(_detect_root "$in_file")"
+        [[ -n "$out_file" ]] || out_file="${in_file}.bundle"
+        [[ "$out_file" == /* ]] || out_file="${PWD:A}/$out_file"
+
+        mkdir -p "${out_file:h}" || {
+            _error "cannot create output directory: ${out_file:h}"
+            return 1
+        }
+
+        local temp_body="$(mktemp)"
+        local temp_out="${out_file}.tmp.$$.$RANDOM"
+
+        TRANSCRIPT_MANIFEST=()
+        STACK=()
+        LOOP_VARS=()
+
+        (( opt_verbose )) && print -- "==> Bundling: $in_file (Root: $cur_root)"
+
+        _transpile_file "$in_file" "$temp_body" "$cur_root" "$out_file"
+        local rc=$?
+        if (( rc != 0 )); then
+            rm -f "$temp_body" "$temp_out"
+            return $rc
         fi
-    done
-    print -r -- "# <<< Environment Paths (conf.d/zshenv) <<<" >> "$zshenv_out"
 
-    # ==============================================================================
-    # 2. BUNDLE .zprofile
-    # ==============================================================================
-    local zprofile_out="$target_dir/.zprofile"
-    cat <<EOF > "$zprofile_out"
+        # Write header
+        cat <<HEADER > "$temp_out"
 # ==============================================================================
-# BUNDLED LOGIN SHELL CONFIGURATION (.zprofile)
-# Auto-generated by bundle_zdotfile on $timestamp.
-# Do not edit this file directly; edit modular files in conf.d/ instead.
+# BUNDLED ${base_name}
+# Transpiled dynamically on $timestamp.
+# Root: $cur_root
 # ==============================================================================
-EOF
+HEADER
 
-    print -r -- "" >> "$zprofile_out"
-    print -r -- 'case "$MY_TERM" in' >> "$zprofile_out"
-    # Terminal-specific zprofile files
-    for f in "$source_dir"/conf.d/zprofile/*.zsh(N); do
-        if [[ "${f:t}" != "default.zsh" ]]; then
-            local term_name="${${f:t}%.zsh}"
-            print -r -- "    ${term_name})" >> "$zprofile_out"
-            _bundle_append "$f" "$zprofile_out" "conf.d/zprofile/${f:t}" true
-            print -r -- "        ;;" >> "$zprofile_out"
-        fi
-    done
-    # Default zprofile
-    print -r -- '    *)' >> "$zprofile_out"
-    if [[ -f "$source_dir/conf.d/zprofile/default.zsh" ]]; then
-        _bundle_append "$source_dir/conf.d/zprofile/default.zsh" "$zprofile_out" "conf.d/zprofile/default.zsh" true
-    fi
-    print -r -- "        ;;" >> "$zprofile_out"
-    print -r -- "esac" >> "$zprofile_out"
-
-    # ==============================================================================
-    # 3. BUNDLE .zshrc
-    # ==============================================================================
-    local zshrc_out="$target_dir/.zshrc"
-    cat <<EOF > "$zshrc_out"
-# ==============================================================================
-# BUNDLED INTERACTIVE SHELL CONFIGURATION (.zshrc)
-# Auto-generated by bundle_zdotfile on $timestamp.
-# Do not edit this file directly; edit modular files in conf.d/ instead.
-# ==============================================================================
-EOF
-
-    # Apple Terminal branch: minimal security / no bloat
-    print -r -- 'if [[ "$MY_TERM" == "Apple_Terminal" ]]; then' >> "$zshrc_out"
-    print -r -- '    # Minimal, raw environment for Apple Terminal' >> "$zshrc_out"
-    _bundle_append "$source_dir/conf.d/env/history.zsh" "$zshrc_out" "Apple_Terminal: history env"
-    _bundle_append "$source_dir/conf.d/option/history.zsh" "$zshrc_out" "Apple_Terminal: history option"
-    _bundle_append "$source_dir/conf.d/env/paths.zsh" "$zshrc_out" "Apple_Terminal: paths"
-    print -r -- 'else' >> "$zshrc_out"
-
-    # Full environment:
-    # 3.1 Options
-    print -r -- "" >> "$zshrc_out"
-    print -r -- "    # --- 1. Shell Options (conf.d/option) ---" >> "$zshrc_out"
-    for f in "$source_dir"/conf.d/option/*.zsh(N); do
-        _bundle_append "$f" "$zshrc_out" "conf.d/option/${f:t}"
-    done
-
-    # 3.2 Environment
-    print -r -- "" >> "$zshrc_out"
-    print -r -- "    # --- 2. Environment Variables & Paths (conf.d/env) ---" >> "$zshrc_out"
-    for f in "$source_dir"/conf.d/env/*.zsh(N); do
-        _bundle_append "$f" "$zshrc_out" "conf.d/env/${f:t}"
-    done
-
-    # 3.3 Keybinds
-    print -r -- "" >> "$zshrc_out"
-    print -r -- "    # --- 3. Keybindings (conf.d/keybind) ---" >> "$zshrc_out"
-    for f in "$source_dir"/conf.d/keybind/*.zsh(N); do
-        _bundle_append "$f" "$zshrc_out" "conf.d/keybind/${f:t}"
-    done
-
-    # 3.4 Plugins
-    print -r -- "" >> "$zshrc_out"
-    print -r -- "    # --- 4. Plugins (conf.d/zshrc/plugins) ---" >> "$zshrc_out"
-    for f in "$source_dir"/conf.d/zshrc/plugins/*.zsh(N); do
-        _bundle_append "$f" "$zshrc_out" "conf.d/zshrc/plugins/${f:t}"
-    done
-
-    # 3.5 Integrations (including evalcache CLI scripts)
-    print -r -- "" >> "$zshrc_out"
-    print -r -- "    # --- 5. Integrations (conf.d/zshrc/integrations) ---" >> "$zshrc_out"
-    for f in "$source_dir"/conf.d/zshrc/integrations/*.zsh(N); do
-        _bundle_append "$f" "$zshrc_out" "conf.d/zshrc/integrations/${f:t}" true
-    done
-    for f in "$source_dir"/conf.d/zshrc/integrations/evalcache/*.zsh(N); do
-        _bundle_append "$f" "$zshrc_out" "conf.d/zshrc/integrations/evalcache/${f:t}"
-    done
-
-    # 3.6 Bindings (binding.zsh, fzf.zsh)
-    print -r -- "" >> "$zshrc_out"
-    print -r -- "    # --- 6. Bindings & Widgets (conf.d/zshrc/bindings) ---" >> "$zshrc_out"
-    for f in "$source_dir"/conf.d/zshrc/bindings/*.zsh(N); do
-        _bundle_append "$f" "$zshrc_out" "conf.d/zshrc/bindings/${f:t}" true
-    done
-
-    # 3.7 Aliases
-    print -r -- "" >> "$zshrc_out"
-    print -r -- "    # --- 7. Aliases (conf.d/zshrc/aliases) ---" >> "$zshrc_out"
-    for f in "$source_dir"/conf.d/zshrc/aliases/*.zsh(N); do
-        _bundle_append "$f" "$zshrc_out" "conf.d/zshrc/aliases/${f:t}"
-    done
-
-    # 3.8 Functions
-    print -r -- "" >> "$zshrc_out"
-    print -r -- "    # --- 8. Custom Functions (conf.d/zshrc/functions) ---" >> "$zshrc_out"
-    for f in "$source_dir"/conf.d/zshrc/functions/*.zsh(N); do
-        _bundle_append "$f" "$zshrc_out" "conf.d/zshrc/functions/${f:t}"
-    done
-
-    # 3.9 Terminal-specific zshrc configurations
-    print -r -- "" >> "$zshrc_out"
-    print -r -- "    # --- 9. Terminal Specific Configurations ---" >> "$zshrc_out"
-    print -r -- '    case "$MY_TERM" in' >> "$zshrc_out"
-    # Scan for terminal directories under conf.d/zshrc/
-    for d in "$source_dir"/conf.d/zshrc/*(/N); do
-        local dname="${d:t}"
-        if [[ "$dname" != "plugins" && "$dname" != "integrations" && "$dname" != "aliases" && "$dname" != "bindings" && "$dname" != "functions" ]]; then
-            print -r -- "        ${dname})" >> "$zshrc_out"
-            # If there is a <term>.zsh in conf.d/zshrc/, append it with conf.d sources stripped
-            if [[ -f "$source_dir/conf.d/zshrc/${dname}.zsh" ]]; then
-                _bundle_append "$source_dir/conf.d/zshrc/${dname}.zsh" "$zshrc_out" "conf.d/zshrc/${dname}.zsh" true
-            fi
-            # Append all files in the terminal folder
-            for f in "$d"/*.zsh(N); do
-                _bundle_append "$f" "$zshrc_out" "conf.d/zshrc/${dname}/${f:t}"
+        if (( ${#TRANSCRIPT_MANIFEST[@]} > 0 )); then
+            typeset -U uniq_manifest
+            uniq_manifest=( "${TRANSCRIPT_MANIFEST[@]}" )
+            print -r -- "# --- TRANSCRIPT: Inlined Files in Load Order (${#uniq_manifest[@]} files) ---" >> "$temp_out"
+            local idx=1
+            for f in "${uniq_manifest[@]}"; do
+                printf "#   [%02d] %s\n" "$idx" "$f" >> "$temp_out"
+                ((idx++))
             done
-            print -r -- "            ;;" >> "$zshrc_out"
+            print -r -- "# ==============================================================================" >> "$temp_out"
         fi
+
+        cat "$temp_body" >> "$temp_out"
+        rm -f "$temp_body"
+
+        # Syntax check via zsh -n
+        if ! zsh -n "$temp_out"; then
+            _error "syntax validation failed for generated bundle: $out_file"
+            rm -f "$temp_out"
+            return 1
+        fi
+
+        chmod --reference="$in_file" "$temp_out" 2>/dev/null || chmod 600 "$temp_out"
+        mv -f "$temp_out" "$out_file" || {
+            _error "failed to install bundle: $out_file"
+            rm -f "$temp_out"
+            return 1
+        }
+
+        if (( opt_compile )); then
+            zcompile "$out_file" || _warn "zcompile failed for $out_file"
+        fi
+
+        print -- "  -> Bundled: ${in_file} => ${out_file}"
+        return 0
+    }
+
+    # -------------------------------------------------------------------------
+    # Mode Dispatcher
+    # -------------------------------------------------------------------------
+
+    local effective_root="$opt_root"
+
+    # Case A: Dotfile Suite Mode
+    # Triggered when no positional arguments are given, OR when exactly 1 argument is given
+    # that is a directory / bundle target (preserving bundle_and_compile backward compatibility).
+    local run_suite=0
+    local suite_target=""
+
+    if (( ${#positional[@]} == 0 )); then
+        run_suite=1
+        suite_target="$opt_out"
+    elif (( ${#positional[@]} == 1 )); then
+        local p1="${positional[1]}"
+        if [[ -d "$p1" || ( "$p1" != *.zsh && ! -f "$p1" ) ]]; then
+            run_suite=1
+            suite_target="$p1"
+        fi
+    fi
+
+    if (( run_suite )); then
+        local src_dir="${effective_root:-${ZDOTDIR:-$HOME/.config/zsh}}"
+        local tgt_dir="${suite_target:-${src_dir}/bundle}"
+        [[ -n "$effective_root" ]] || effective_root="$src_dir"
+
+        mkdir -p "$tgt_dir" || {
+            _error "failed to create bundle directory: $tgt_dir"
+            return 1
+        }
+
+        echo "==> Transpiling top-level dotfiles from '$src_dir' to '$tgt_dir'..."
+        local dotname
+        for dotname in .zshenv .zprofile .zshrc .zlogin .zlogout; do
+            local dotfile="$src_dir/$dotname"
+            [[ -f "$dotfile" ]] || continue
+            _bundle_single "$dotfile" "$tgt_dir/$dotname" "$effective_root" || return 1
+        done
+
+        if (( opt_compile )); then
+            echo "==> Compiling bundled dotfiles with zcompile..."
+            for f in "$tgt_dir"/.z*~*.zwc(N.) "$tgt_dir"/*.zsh~*.zwc(N.); do
+                zcompile "$f" && echo "  Compiled: ${f:t}.zwc"
+            done
+        fi
+
+        echo "==> Transpilation completed successfully!"
+        return 0
+    fi
+
+    # Case B: Explicit file(s) passed via "$@"
+    # If 2 positional arguments are passed, and first is an existing file, treat as input & output
+    if [[ ${#positional[@]} -eq 2 && -f "${positional[1]}" && ! -d "${positional[2]}" ]]; then
+        _bundle_single "${positional[1]}" "${positional[2]}" "$effective_root"
+        return $?
+    fi
+
+    # Multi-file or single-file with optional --output directory
+    local input_f out_f
+    for input_f in "${positional[@]}"; do
+        if [[ -n "$opt_out" && -d "$opt_out" ]]; then
+            out_f="$opt_out/${input_f:t}"
+        elif [[ -n "$opt_out" && ${#positional[@]} == 1 ]]; then
+            out_f="$opt_out"
+        else
+            out_f="${input_f}.bundle"
+        fi
+        _bundle_single "$input_f" "$out_f" "$effective_root" || return 1
     done
-    print -r -- "    esac" >> "$zshrc_out"
-    print -r -- 'fi' >> "$zshrc_out"
 
-    # ==============================================================================
-    # 4. BUNDLE .zlogin
-    # ==============================================================================
-    local zlogin_out="$target_dir/.zlogin"
-    cat <<EOF > "$zlogin_out"
-# ==============================================================================
-# BUNDLED LOGIN NOTIFICATIONS (.zlogin)
-# Auto-generated by bundle_zdotfile on $timestamp.
-# Do not edit this file directly; edit modular files in conf.d/ instead.
-# ==============================================================================
-EOF
-
-    print -r -- "" >> "$zlogin_out"
-    print -r -- 'case "$MY_TERM" in' >> "$zlogin_out"
-    for f in "$source_dir"/conf.d/zlogin/*.zsh(N); do
-        local term_name="${${f:t}%.zsh}"
-        print -r -- "    ${term_name})" >> "$zlogin_out"
-        _bundle_append "$f" "$zlogin_out" "conf.d/zlogin/${f:t}"
-        print -r -- "        ;;" >> "$zlogin_out"
-    done
-    print -r -- "esac" >> "$zlogin_out"
-
-    # ==============================================================================
-    # 5. BUNDLE .zlogout
-    # ==============================================================================
-    local zlogout_out="$target_dir/.zlogout"
-    cat <<EOF > "$zlogout_out"
-# ==============================================================================
-# BUNDLED LOGOUT ACTIONS (.zlogout)
-# Auto-generated by bundle_zdotfile on $timestamp.
-# Do not edit this file directly; edit modular files in conf.d/ instead.
-# ==============================================================================
-EOF
-
-    for f in "$source_dir"/conf.d/zlogout/*.zsh(N); do
-        _bundle_append "$f" "$zlogout_out" "conf.d/zlogout/${f:t}"
-    done
-
-    echo "==> Bundling completed successfully!"
-    echo "    Generated files in $target_dir:"
-    echo "    - .zshenv"
-    echo "    - .zprofile"
-    echo "    - .zshrc"
-    echo "    - .zlogin"
-    echo "    - .zlogout"
+    return 0
 }
 
-bundle_zdotfile "$@"
+if [[ "$0" == *bundle_zdotfile* ]]; then
+    bundle_zdotfile "$@"
+fi

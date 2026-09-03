@@ -1,6 +1,7 @@
 # ==============================================================================
 # INTERACTIVE SHELL CONFIGURATION (.zshrc)
 # ==============================================================================
+zmodload zsh/zprof
 [[ -f "${ZDOTDIR}/bundle/.zshrc" ]] && source "${ZDOTDIR}/bundle/.zshrc" && return
 
 # Source zshrc config files

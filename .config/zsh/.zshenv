@@ -1,7 +1,7 @@
 # ==============================================================================
 # ENVIRONMENT VARIABLES (.zshenv)
 # ==============================================================================
-
+[[ -f "${ZDOTDIR}/bundle/.zshenv" ]] && source "${ZDOTDIR}/bundle/.zshenv" && return
 # --- System & Tool Environment Variables ---
 export LANG="en_US.UTF-8"
 
