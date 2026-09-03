@@ -1,0 +1,15 @@
+history() {
+    local clear list
+    zparseopts -E c=clear l=list
+
+    if [[ -n "$clear" ]]; then
+        echo -n >| "$HISTFILE"
+        fc -p "$HISTFILE"
+        echo >&2 "History cleared. Reload session to take effect."
+    elif [[ -n "$list" ]]; then
+        builtin fc "$@"
+    else
+        [[ ${@[-1]-} = *[0-9]* ]] && builtin fc -l "$@" || builtin fc -l "$@" 1
+    fi
+}
+history "$@"

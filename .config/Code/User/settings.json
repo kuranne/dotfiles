@@ -1,98 +1,28 @@
 {
-  "breadcrumbs.enabled": false,
-
-  "chat.agentsControl.enabled": "hidden",
-  "chat.mcp.gallery.enabled": true,
-  "chat.titleBar.openInAgentsWindow.enabled": false,
-
-  "custom-ui-style.electron": {
-    "titleBarStyle": "hiddenInset",
-    "trafficLightPosition": {
-      "x": -100,
-      "y": -100,
-    },
-  },
-  "custom-ui-style.stylesheet": {
-    ".notification-toast": "box-shadow: none !important",
-    ".quick-input-widget.show-file-icons": "box-shadow: none !important",
-    ".quick-input-widget": "top: 25vh !important",
-    ".quick-input-list .scrollbar": "display: none",
-    ".monaco-action-bar.quick-input-inline-action-bar": "display: none",
-    ".editor-widget.find-widget": "box-shadow: none; border-radius: 4px",
-    ".quick-input-titlebar": "background: #100B15 !important",
-    ".monaco-workbench .part.editor > .content .editor-group-container > .title.title-border-bottom:after": "display: none",
-    ".monaco-scrollable-element > .shadow.top": "display: none",
-    ".sidebar .title-label": "padding: 0 !important",
-    ".sidebar": "border: none !important",
-    ".monaco-workbench .monaco-list:not(.element-focused):focus:before": "outline: none !important",
-    ".monaco-list-row.focused": "outline: none !important",
-    ".monaco-editor .scroll-decoration": "display: none",
-    ".title-actions": "display: none !important",
-    ".title.show-file-icons .label-container .monaco-icon-label.file-icon": "justify-content: center; padding: 0 !important",
-    ".title .monaco-icon-label:after": "margin-right: 0",
-    ".monaco-workbench .part.editor > .content .editor-group-container > .title > .label-container > .title-label": "padding-left: 60px",
-    ".title .monaco-icon-label.file-icon": "margin: 0 60px",
-    ".monaco-editor .cursors-layer .cursor": "background-image: linear-gradient(135deg, #ffaffc 10%, #DA70D6 100%)",
-  },
-
-  "docker.extension.enableComposeLanguageServer": false,
-
-  "editor.accessibilitySupport": "off",
-  "editor.codeLensFontFamily": "'JetbrainsMono Nerd Font'",
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.fontSize": 12,
-  "editor.fontFamily": "'JetBrainsMono Nerd Font'",
-  "editor.formatOnSave": true,
-  "editor.inertialScroll": true,
-  "editor.inlineSuggest.enabled": false,
-  "editor.largeFileOptimizations": false,
-  "editor.smoothScrolling": true,
-  "editor.wordWrap": "on",
-  "editor.mouseWheelZoom": true,
-  "editor.formatOnPaste": true,
-  "editor.codeLens": true,
-  "editor.lineHeight": 1.6,
-  "editor.fontLigatures": true,
-  "editor.renderLineHighlight": "gutter",
-  "editor.occurrencesHighlight": "off",
-  "editor.hideCursorInOverviewRuler": true,
-  "editor.lightbulb.enabled": "off",
-  "editor.cursorSmoothCaretAnimation": "on",
-  "editor.cursorBlinking": "smooth",
-
-  "errorLens.enabledDiagnosticLevels": ["info", "warning", "error"],
-  "errorLens.fontFamily": "JetBrainsMono Nerd Font",
-
-  "extensions.ignoreRecommendations": true,
-
-  "explorer.confirmDelete": false,
-  "explorer.confirmDragAndDrop": false,
-  "explorer.enableDragAndDrop": true,
-  "explorer.autoOpenDroppedFile": false,
-  "explorer.fileNesting.enabled": true,
-  "explorer.compactFolders": true,
-
-  "git.openRepositoryInParentFolders": "always",
-
-  "kotlin.languageServer.enabled": false,
-  "kotlin.debugAdapter.enabled": false,
-
-  "redhat.telemetry.enabled": false,
-
-  "terminal.integrated.fontFamily": "\"JetBrainsMonoNL Nerd Font\"",
-  "terminal.integrated.gpuAcceleration": "on",
-
+  // ---------------------------------------------------------------------------
+  // Window & Security
+  // ---------------------------------------------------------------------------
+  "security.workspace.trust.startupPrompt": "once",
   "window.autoDetectColorScheme": false,
-  "window.commandCenter": false,
   "window.confirmBeforeClose": "never",
   "window.systemColorTheme": "dark",
   "window.titleBarStyle": "native",
-  "window.customTitleBarVisibility": "never",
-  "window.zoomLevel": 1.5,
+  "window.zoomLevel": 1,
 
+  // ---------------------------------------------------------------------------
+  // Workbench & Appearance
+  // ---------------------------------------------------------------------------
+  "breadcrumbs.enabled": false,
+  "workbench.activityBar.autoHide": true,
+  "workbench.activityBar.location": "bottom",
   "workbench.browser.showInTitleBar": false,
   "workbench.colorTheme": "Eva Dark",
+  "workbench.editor.decorations.badges": false,
   "workbench.editor.showTabs": "single",
+  "workbench.editorAssociations": {
+    "*.copilotmd": "vscode.markdown.preview.editor",
+    "*.db": "default"
+  },
   "workbench.experimental.share.enabled": true,
   "workbench.fontAliasing": "antialiased",
   "workbench.iconTheme": "material-icon-theme",
@@ -101,16 +31,13 @@
   "workbench.secondarySideBar.defaultVisibility": "hidden",
   "workbench.startupEditor": "none",
   "workbench.statusBar.visible": true,
-  "workbench.activityBar.autoHide": true,
-  "workbench.editor.decorations.badges": false,
-
   "workbench.colorCustomizations": {
     "activityBar.background": "#1e1e1e4d",
     "breadcrumb.background": "#1e1e1e00",
     "editor.background": "#1e1e1e4d",
-    "editorGutter.background": "#1e1e1e00",
     "editorGroupHeader.noTabsBackground": "#1e1e1e00",
     "editorGroupHeader.tabsBackground": "#1e1e1e00",
+    "editorGutter.background": "#1e1e1e00",
     "editorHoverWidget.background": "#1e1e1ee6",
     "editorPane.background": "#1e1e1e00",
     "editorStickyScroll.background": "#1e1e1e4d",
@@ -131,38 +58,170 @@
     "tab.inactiveBackground": "#1e1e1e4d",
     "tab.unfocusedActiveBackground": "#1e1e1e00",
     "tab.unfocusedInactiveBackground": "#1e1e1e4d",
-    "terminal.background": "#00000000",
+    "terminal.background": "#00000000"
   },
 
-  "[c]": {
-    "editor.defaultFormatter": "ms-vscode.cpptools",
-  },
-  "git.confirmSync": false,
-  "security.workspace.trust.startupPrompt": "once",
-  "workbench.activityBar.location": "bottom",
+  // ---------------------------------------------------------------------------
+  // Editor
+  // ---------------------------------------------------------------------------
+  "editor.accessibilitySupport": "off",
+  "editor.codeLensFontFamily": "'JetbrainsMono Nerd Font'",
+  "editor.cursorBlinking": "smooth",
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.fontFamily": "'JetBrainsMono Nerd Font'",
+  "editor.fontLigatures": true,
+  "editor.fontSize": 12,
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "editor.hideCursorInOverviewRuler": true,
+  "editor.inertialScroll": true,
+  "editor.inlineSuggest.enabled": false,
+  "editor.largeFileOptimizations": false,
+  "editor.lightbulb.enabled": "off",
+  "editor.lineHeight": 1.6,
   "editor.minimap.enabled": false,
-  "workbench.editorAssociations": {
-    "*.copilotmd": "vscode.markdown.preview.editor",
-    "*.db": "default"
-  },
+  "editor.mouseWheelZoom": true,
+  "editor.occurrencesHighlight": "off",
+  "editor.renderLineHighlight": "gutter",
+  "editor.smoothScrolling": true,
+  "editor.wordWrap": "on",
+
+  // ---------------------------------------------------------------------------
+  // Explorer & File Management
+  // ---------------------------------------------------------------------------
+  "explorer.autoOpenDroppedFile": false,
+  "explorer.compactFolders": true,
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "explorer.enableDragAndDrop": true,
+  "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.patterns": {
-    "*.ts": "${capture}.js",
+    "*.db": "${capture}.${extname}-*",
+    "*.db3": "${capture}.${extname}-*",
     "*.js": "${capture}.js.map, ${capture}.min.js, ${capture}.d.ts",
     "*.jsx": "${capture}.js",
-    "*.tsx": "${capture}.ts",
-    "tsconfig.json": "tsconfig.*.json",
-    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock",
-    "*.sqlite": "${capture}.${extname}-*",
-    "*.db": "${capture}.${extname}-*",
-    "*.sqlite3": "${capture}.${extname}-*",
-    "*.db3": "${capture}.${extname}-*",
+    "*.s3db": "${capture}.${extname}-*",
     "*.sdb": "${capture}.${extname}-*",
-    "*.s3db": "${capture}.${extname}-*"
+    "*.sqlite": "${capture}.${extname}-*",
+    "*.sqlite3": "${capture}.${extname}-*",
+    "*.ts": "${capture}.js",
+    "*.tsx": "${capture}.ts",
+    "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock",
+    "tsconfig.json": "tsconfig.*.json"
   },
+
+  // ---------------------------------------------------------------------------
+  // Terminal
+  // ---------------------------------------------------------------------------
+  "terminal.integrated.fontFamily": "\"JetBrainsMonoNL Nerd Font\"",
+  "terminal.integrated.gpuAcceleration": "on",
+
+  // ---------------------------------------------------------------------------
+  // Git & Version Control
+  // ---------------------------------------------------------------------------
+  "git.confirmSync": false,
+  "git.openRepositoryInParentFolders": "always",
+
+  // ---------------------------------------------------------------------------
+  // AI & Chat
+  // ---------------------------------------------------------------------------
+  "chat.agentsControl.enabled": "hidden",
+  "chat.extensionUnification.enabled": false,
+  "chat.mcp.gallery.enabled": true,
+  "chat.titleBar.openInAgentsWindow.enabled": false,
+  "github.copilot.enable": {
+    "*": false,
+    "markdown": false,
+    "plaintext": false,
+    "scminput": false
+  },
+
+  // ---------------------------------------------------------------------------
+  // Custom UI Style
+  // ---------------------------------------------------------------------------
+  "custom-ui-style.electron": {
+    "titleBarStyle": "hiddenInset",
+    "trafficLightPosition": {
+      "x": -100,
+      "y": -100
+    }
+  },
+  "custom-ui-style.stylesheet": {
+    ".editor-widget.find-widget": "box-shadow: none; border-radius: 4px",
+    ".monaco-action-bar.quick-input-inline-action-bar": "display: none",
+    ".monaco-editor .cursors-layer .cursor": "background-image: linear-gradient(135deg, #ffaffc 10%, #DA70D6 100%)",
+    ".monaco-editor .scroll-decoration": "display: none",
+    ".monaco-list-row.focused": "outline: none !important",
+    ".monaco-scrollable-element > .shadow.top": "display: none",
+    ".monaco-workbench .monaco-list:not(.element-focused):focus:before": "outline: none !important",
+    ".monaco-workbench .part.editor > .content .editor-group-container > .title > .label-container > .title-label": "padding-left: 60px",
+    ".monaco-workbench .part.editor > .content .editor-group-container > .title.title-border-bottom:after": "display: none",
+    ".notification-toast": "box-shadow: none !important",
+    ".quick-input-list .scrollbar": "display: none",
+    ".quick-input-titlebar": "background: #100B15 !important",
+    ".quick-input-widget": "top: 25vh !important",
+    ".quick-input-widget.show-file-icons": "box-shadow: none !important",
+    ".sidebar": "border: none !important",
+    ".sidebar .title-label": "padding: 0 !important",
+    ".title .monaco-icon-label.file-icon": "margin: 0 60px",
+    ".title .monaco-icon-label:after": "margin-right: 0",
+    ".title-actions": "display: none !important",
+    ".title.show-file-icons .label-container .monaco-icon-label.file-icon": "justify-content: center; padding: 0 !important"
+  },
+
+  // ---------------------------------------------------------------------------
+  // Extensions & Integrations
+  // ---------------------------------------------------------------------------
+  // Docker
+  "docker.extension.enableComposeLanguageServer": false,
+
+  // ErrorLens
+  "errorLens.enabledDiagnosticLevels": [
+    "info",
+    "warning",
+    "error"
+  ],
+  "errorLens.fontFamily": "JetBrainsMono Nerd Font",
+
+  // Kotlin
+  "kotlin.debugAdapter.enabled": false,
+  "kotlin.languageServer.enabled": false,
+
+  // Makefile
+  "makefile.configureOnOpen": true,
+
+  // Mermaid
+  "mermaid.vscode.aiExportName": false,
+  "mermaidChart.aiSkills.enabled": false,
+  "mermaidChart.aiSkills.promptOnDetect": false,
+  "mermaidChart.showGenerateDiagramCodeLens": false,
+
+  // MSSQL
   "mssql.connectionGroups": [
     {
       "name": "ROOT",
       "id": "ROOT"
     }
   ],
+
+  // PlantUML
+  "plantuml.render": "PlantUMLServer",
+  "plantuml.server": "http://localhost:8080",
+
+  // ---------------------------------------------------------------------------
+  // Telemetry & Recommendations
+  // ---------------------------------------------------------------------------
+  "extensions.ignoreRecommendations": true,
+  "redhat.telemetry.enabled": false,
+
+  // ---------------------------------------------------------------------------
+  // Language-Specific Overrides
+  // ---------------------------------------------------------------------------
+  "[c]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools"
+  },
+  "[cpp]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools"
+  }
 }

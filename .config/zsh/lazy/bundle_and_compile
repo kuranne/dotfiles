@@ -1,0 +1,19 @@
+bundle_and_compile() {
+    autoload -Uz bundle_zdotfile compile_zdotfile
+    local target_dir="${1:-${ZDOTDIR:-$HOME/.config/zsh}/bundle}"
+
+    echo "==> [1/2] Bundling Zsh configurations into: $target_dir"
+    bundle_zdotfile "$target_dir" || {
+        echo >&2 "Error: Bundling failed!"
+        return 1
+    }
+
+    echo "==> [2/2] Compiling bundled files and dotfiles with zcompile..."
+    compile_zdotfile "$target_dir" || {
+        echo >&2 "Error: Compilation failed!"
+        return 1
+    }
+
+    echo "==> Done! Successfully bundled and compiled Zsh configurations."
+}
+bundle_and_compile "$@"

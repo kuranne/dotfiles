@@ -1,0 +1,8 @@
+cnf-prune() {
+    typeset -g CNF_DB_PATH="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/cnf.db"
+    local days="${1:-30}"
+    [[ ! -f "$CNF_DB_PATH" ]] && return 0
+    sqlite3 "$CNF_DB_PATH" "DELETE FROM cnf_cache WHERE updated_at < strftime('%s', 'now', '-$days days'); VACUUM;" >/dev/null 2>&1
+    echo "Pruned entries older than $days days."
+}
+cnf-prune "$@"
