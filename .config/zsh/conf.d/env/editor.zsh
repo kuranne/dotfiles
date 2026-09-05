@@ -13,4 +13,4 @@ _set_editor() {
     done
 }
 _set_editor
-unset _set_editor
+unset -f _set_editor

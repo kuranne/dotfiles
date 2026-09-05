@@ -35,38 +35,13 @@ zinit wait"0" lucid for \
     Aloxaf/fzf-tab \
     hlissner/zsh-autopair \
     atload"_zsh_autosuggest_start" \
-        zsh-users/zsh-autosuggestions \
+    zsh-users/zsh-autosuggestions \
     zdharma-continuum/fast-syntax-highlighting
 
 # -----------------------------------------------------------------------------
-# Deferred Shell Integrations (Atuin & Direnv)
-# Defer hook attachment so initial prompt displays immediately without latency.
-# -----------------------------------------------------------------------------
-_deferred_shell_integrations() {
-    add-zsh-hook -d precmd _deferred_shell_integrations
-
-    # atuin (interactive history)
-    if (( $+commands[atuin] )); then
-        _evalcache atuin atuin init zsh
-    fi
-
-    # direnv (environment hook)
-    if (( $+commands[direnv] )); then
-        _evalcache direnv direnv hook zsh
-    fi
-
-    # fzf default keybindings and completions
-    if (( $+commands[fzf] )); then
-        autoload -Uz _load_fzf_conf
-        _load_fzf_conf
-    fi
-}
-autoload -Uz add-zsh-hook
-add-zsh-hook precmd _deferred_shell_integrations
-
-# -----------------------------------------------------------------------------
-# Tier 2: Auxiliary Oh-My-Zsh Snippets & Tools (Turbo wait"1" lucid)
-# Loads in background 1 second after shell launch, completely out of the critical path.
+# Tier 2: Auxiliary Oh-My-Zsh Snippets & Tools
+# Key-bindings load synchronously so integrations (Atuin) take precedence.
+# Plugins load asynchronously with Turbo wait"1" lucid.
 # -----------------------------------------------------------------------------
 _load_zinit_extensions() {
     local libsnippets=(
@@ -98,7 +73,7 @@ _load_zinit_extensions() {
     )
 
     for lib in "${libsnippets[@]}"; do
-        zinit wait"1" lucid for "$lib"
+        zinit snippet "$lib"
     done
 
     for item in "${plugins[@]}"; do

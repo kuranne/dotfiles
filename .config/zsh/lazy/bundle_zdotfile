@@ -97,54 +97,68 @@ bundle_zdotfile() {
 
     # Safe variable resolution: handles known parameters and loop variables without eval
     _resolve_vars() {
-        local s="$1" cur_root="$2" name value token
+        local _res_s="$1" _res_root="$2" _res_name _res_val _res_tok
+        local -i _res_iter=0
 
-        [[ "$s" != *'$('* && "$s" != *'`'* ]] || return 2
+        [[ "$_res_s" != *'$('* && "$_res_s" != *'`'* ]] || return 2
 
         # Replace ${ZDOTDIR} / $ZDOTDIR
-        if [[ -n "$cur_root" ]]; then
-            s="${s//\$\{ZDOTDIR\}/$cur_root}"
-            s="${s//\$ZDOTDIR/$cur_root}"
+        if [[ -n "$_res_root" ]]; then
+            _res_s="${_res_s//\$\{ZDOTDIR\}/$_res_root}"
+            _res_s="${_res_s//\$ZDOTDIR/$_res_root}"
         fi
 
-        while [[ "$s" =~ '\$\{([A-Za-z_][A-Za-z0-9_]*)\}' ]]; do
-            token="$MATCH"
-            name="${match[1]}"
-            if (( ${+LOOP_VARS[$name]} )); then
-                value="${LOOP_VARS[$name]}"
-            elif (( ${+parameters[$name]} )); then
-                value="${(P)name}"
-            elif [[ "$name" == "ZDOTDIR" && -n "$cur_root" ]]; then
-                value="$cur_root"
+        while [[ "$_res_s" =~ '\$\{([A-Za-z_][A-Za-z0-9_]*)\}' ]]; do
+            (( _res_iter++ > 15 )) && return 2
+            _res_tok="$MATCH"
+            _res_name="${match[1]}"
+            if (( ${+LOOP_VARS[$_res_name]} )); then
+                _res_val="${LOOP_VARS[$_res_name]}"
+            elif [[ "$_res_name" == "ZDOTDIR" && -n "$_res_root" ]]; then
+                _res_val="$_res_root"
+            elif [[ "$_res_name" == "HOME" ]]; then
+                _res_val="$HOME"
+            elif [[ "$_res_name" == "MY_TERM" ]]; then
+                return 2
+            elif (( ${+parameters[$_res_name]} )) && [[ "$_res_name" != _res_* && "$_res_name" != s && "$_res_name" != f && "$_res_name" != line && "$_res_name" != script ]]; then
+                _res_val="${(P)_res_name}"
             else
                 return 2
             fi
-            s="${s//$token/$value}"
+            [[ "$_res_tok" != "$_res_val" ]] || return 2
+            _res_s="${_res_s//$_res_tok/$_res_val}"
         done
 
-        while [[ "$s" =~ '\$([A-Za-z_][A-Za-z0-9_]*)' ]]; do
-            token="$MATCH"
-            name="${match[1]}"
-            if (( ${+LOOP_VARS[$name]} )); then
-                value="${LOOP_VARS[$name]}"
-            elif (( ${+parameters[$name]} )); then
-                value="${(P)name}"
-            elif [[ "$name" == "ZDOTDIR" && -n "$cur_root" ]]; then
-                value="$cur_root"
+        _res_iter=0
+        while [[ "$_res_s" =~ '\$([A-Za-z_][A-Za-z0-9_]*)' ]]; do
+            (( _res_iter++ > 15 )) && return 2
+            _res_tok="$MATCH"
+            _res_name="${match[1]}"
+            if (( ${+LOOP_VARS[$_res_name]} )); then
+                _res_val="${LOOP_VARS[$_res_name]}"
+            elif [[ "$_res_name" == "ZDOTDIR" && -n "$_res_root" ]]; then
+                _res_val="$_res_root"
+            elif [[ "$_res_name" == "HOME" ]]; then
+                _res_val="$HOME"
+            elif [[ "$_res_name" == "MY_TERM" ]]; then
+                return 2
+            elif (( ${+parameters[$_res_name]} )) && [[ "$_res_name" != _res_* && "$_res_name" != s && "$_res_name" != f && "$_res_name" != line && "$_res_name" != script ]]; then
+                _res_val="${(P)_res_name}"
             else
                 return 2
             fi
-            s="${s//$token/$value}"
+            [[ "$_res_tok" != "$_res_val" ]] || return 2
+            _res_s="${_res_s//$_res_tok/$_res_val}"
         done
 
         # Expand tilde
-        if [[ "$s" == '~' ]]; then
-            s="$HOME"
-        elif [[ "$s" == '~/'* ]]; then
-            s="$HOME/${s#~/}"
+        if [[ "$_res_s" == '~' ]]; then
+            _res_s="$HOME"
+        elif [[ "$_res_s" == '~/'* ]]; then
+            _res_s="$HOME/${_res_s#~/}"
         fi
 
-        print -r -- "$s"
+        print -r -- "$_res_s"
     }
 
     # Pure recursive brace expansion without eval
@@ -301,6 +315,11 @@ bundle_zdotfile() {
 
         local in_for_loop=false
         local -a for_files=()
+        local -a for_body=()
+        local -a candidate_files=()
+        local -a valid_files=()
+        local for_var="" for_header="" candidate_var="" candidate_expr="" bline="" f=""
+        local fname="" fstem="" fallback_file="" raw="" is_source_loop=false
         local in_dynamic_if=false
         local in_else=false
         local dyn_var=""
@@ -347,7 +366,7 @@ bundle_zdotfile() {
 
                 if [[ "$in_else" == "true" ]]; then
                     if [[ "$line" =~ '^[[:space:]]*(source|\.)[[:space:]]+(.+)$' ]]; then
-                        local raw="${match[2]}"
+                        raw="${match[2]}"
                         raw="${raw%%[[:space:]][#]*}"
                         raw="$(_strip_quotes "$raw")"
                         raw="$(_resolve_vars "$raw" "$cur_root")"
@@ -365,8 +384,8 @@ bundle_zdotfile() {
                     # Discover all profile files matching in the dynamic directory
                     if [[ -d "$dyn_dir" ]]; then
                         for f in "$dyn_dir"/*.zsh(N); do
-                            local fname="${f:t}"
-                            local fstem="${fname%.zsh}"
+                            fname="${f:t}"
+                            fstem="${fname%.zsh}"
                             if [[ "${f:A}" != "$dyn_fallback" && "$fname" != "default.zsh" ]]; then
                                 printf '    %s)\n' "$fstem" >> "$dest"
                                 _transpile_file "$f" "$dest" "$cur_root" "$out_dest"
@@ -376,7 +395,7 @@ bundle_zdotfile() {
                     fi
 
                     # Synthesize fallback / default under *)
-                    local fallback_file=""
+                    fallback_file=""
                     if [[ -n "$dyn_fallback" && -f "$dyn_fallback" ]]; then
                         fallback_file="$dyn_fallback"
                     elif [[ -d "$dyn_dir" && -f "$dyn_dir/default.zsh" ]]; then
@@ -398,31 +417,64 @@ bundle_zdotfile() {
             # 2. Detect for loops that source files
             if [[ "$line" =~ '^[[:space:]]*for[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]+in[[:space:]]+(.+);[[:space:]]*do' ]] || \
                [[ "$line" =~ '^[[:space:]]*for[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]+in[[:space:]]+(.+)[[:space:]]*$' ]]; then
-                local loop_var="${match[1]}"
-                local expr="${match[2]}"
-                expr="${expr%;[[:space:]]*do}"
-                expr="${expr%;}"
+                candidate_var="${match[1]}"
+                candidate_expr="${match[2]}"
+                candidate_expr="${candidate_expr%;[[:space:]]*do}"
+                candidate_expr="${candidate_expr%;}"
 
-                local -a found_files
-                found_files=( "${(@f)$(_expand_globs "$expr" "$cur_root" "$src_dir")}" )
-                if (( ${#found_files[@]} )); then
-                    in_for_loop=true
-                    for_files=( "${found_files[@]}" )
-                    continue
+                # Only candidate if expression contains glob characters (* or ?) or references .zsh
+                if [[ "$candidate_expr" == *[\*\?]* || "$candidate_expr" == *.zsh* ]]; then
+                    candidate_files=( ${(f)"$(_expand_globs "$candidate_expr" "$cur_root" "$src_dir")"} )
+                    candidate_files=( ${candidate_files:#} )
+                    valid_files=()
+                    for f in "${candidate_files[@]}"; do
+                        [[ -f "$f" ]] && valid_files+=( "$f" )
+                    done
+                    if (( ${#valid_files[@]} )); then
+                        in_for_loop=true
+                        for_var="$candidate_var"
+                        for_files=( "${valid_files[@]}" )
+                        for_header="$line"
+                        for_body=()
+                        continue
+                    fi
                 fi
             fi
 
             if [[ "$in_for_loop" == "true" ]]; then
                 if [[ "$line" =~ '^[[:space:]]*done[[:space:]]*$' ]]; then
                     in_for_loop=false
-                    for f in "${for_files[@]}"; do
-                        if [[ -f "$f" ]]; then
-                            _transpile_file "$f" "$dest" "$cur_root" "$out_dest"
+                    # Verify if loop body actually sources the loop variable
+                    is_source_loop=false
+                    for bline in "${for_body[@]}"; do
+                        if [[ "$bline" =~ '(source|\.)[[:space:]]+' ]] && \
+                           [[ "$bline" == *"\$$for_var"* || "$bline" == *"\${$for_var}"* ]]; then
+                            is_source_loop=true
+                            break
                         fi
                     done
+
+                    if [[ "$is_source_loop" == "true" ]]; then
+                        for f in "${for_files[@]}"; do
+                            if [[ -f "$f" ]]; then
+                                _transpile_file "$f" "$dest" "$cur_root" "$out_dest"
+                            fi
+                        done
+                    else
+                        # Not a sourcing loop -> preserve verbatim!
+                        print -r -- "$for_header" >> "$dest"
+                        for bline in "${for_body[@]}"; do
+                            print -r -- "$bline" >> "$dest"
+                        done
+                        print -r -- "$line" >> "$dest"
+                    fi
                     for_files=()
+                    for_body=()
+                    continue
+                else
+                    for_body+=( "$line" )
+                    continue
                 fi
-                continue
             fi
 
             # 3. Detect direct source commands
@@ -613,7 +665,3 @@ HEADER
 
     return 0
 }
-
-if [[ "$0" == *bundle_zdotfile* ]]; then
-    bundle_zdotfile "$@"
-fi

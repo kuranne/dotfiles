@@ -20,6 +20,7 @@ export XDG_BIN_HOME="$HOME/.local/bin"
 export ZSH_COMPDUMP="$XDG_CACHE_HOME/zsh/zcompdump-$ZSH_VERSION"
 export ZSH_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/cache"
 [[ ! -d "$ZSH_CACHE_DIR/completions" ]] && mkdir -p "$ZSH_CACHE_DIR/completions"
+
 # --- Lang
 export CARGO_HOME="$XDG_DATA_HOME/cargo"
 export RUSTUP_HOME="$XDG_DATA_HOME/rustup"
@@ -69,6 +70,8 @@ export ATUIN_CONFIG_DIR="$XDG_CONFIG_HOME/atuin"
 export WGETRC="$XDG_CONFIG_HOME/wget/wgetrc"
 
 export CLAUDE_CONFIG_DIR="$XDG_CONFIG_HOME/claude"
+
+export HOMEBREW_USER_CONFIG_HOME="$XDG_CONFIG_HOME/homebrew"
 
 # ---------- Other ----------
 # Terminal Define
