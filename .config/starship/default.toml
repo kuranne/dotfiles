@@ -21,7 +21,9 @@ right_format = """$all"""
 [directory]
 style = "teal"
 format = "[ $path ]($style)"
-truncation_length = 4
+truncation_length = 3
+truncate_to_repo = true
+fish_style_pwd_dir_length = 3
 
 [directory.substitutions]
 "Documents" = "󰈙 "

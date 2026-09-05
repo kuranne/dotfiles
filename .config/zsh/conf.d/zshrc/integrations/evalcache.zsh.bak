@@ -2,8 +2,7 @@
 _evalcache() {
   local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/eval"
   [[ ! -d $cache_dir ]] && mkdir -p "$cache_dir"
-  local ver="$(command "$1" --version 2>/dev/null | head -1)"
-  local cache_file="$cache_dir/evalcache_${1}_${ver:+${ver// /_}}.zsh"
+  local cache_file="$cache_dir/evalcache_${1}.zsh"
 
   shift
   if [[ ! -s "$cache_file" ]]; then

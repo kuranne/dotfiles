@@ -8,6 +8,17 @@
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
   // Discord Rich Presence Config
+  "edit_predictions": {
+    "zed": {
+      "prediction_debounce": 1000
+    },
+    "ollama": {
+      "prediction_debounce": 1000,
+      "model": "gemma4:e4b-mlx",
+      "max_output_tokens": 64
+    },
+    "provider": "ollama"
+  },
   "search": {
     "whole_word": false
   },

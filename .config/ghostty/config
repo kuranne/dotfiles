@@ -26,7 +26,7 @@ theme = Afterglow
 
 # Background
 background = 141414
-background-opacity = 0.80
+background-opacity = 0.9
 background-opacity-cells = true
 background-blur = 10
 
@@ -38,7 +38,7 @@ font-feature = "calt"
 font-feature = "liga"
 
 # --- Cursor styling ---
-cursor-style = block
+cursor-style = bar
 cursor-style-blink = true
 
 # --- Mouse & Interaction ---

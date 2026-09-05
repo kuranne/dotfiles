@@ -35,3 +35,6 @@ if [[ -n "$ZSH_CLIPBOARD_CMD" ]]; then
 fi
 
 autoload -Uz passc
+
+# Antigravity
+alias ade="agy-ide --extensions-dir ${XDG_DATA_HOME:-$HOME/.local/share}/antigravity-ide/extensions"

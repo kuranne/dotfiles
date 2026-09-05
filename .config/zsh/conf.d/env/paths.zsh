@@ -7,7 +7,7 @@ load_paths() {
     $CARGO_HOME/bin
     $GOPATH/bin
   )
-  _add_paths_to_target_paths() {
+  local _add_paths_to_target_paths() {
     target_paths+=("$@")
   }
 
@@ -53,3 +53,4 @@ load_paths() {
 }
 
 load_paths
+unset -f load_paths
