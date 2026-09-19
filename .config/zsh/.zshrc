@@ -1,7 +1,7 @@
 # ==============================================================================
 # INTERACTIVE SHELL CONFIGURATION (.zshrc)
 # ==============================================================================
-[[ -f "${ZDOTDIR}/bundle/.zshrc" ]] && source "${ZDOTDIR}/bundle/.zshrc" && return
+[[ -f "${ZDOTDIR}/bundle/.zshrc" ]] && { source "${ZDOTDIR}/bundle/.zshrc"; return 0; }
 
 # Source zshrc config files
 if [[ -f "${ZDOTDIR}/conf.d/zshrc/${MY_TERM}.zsh" ]]; then

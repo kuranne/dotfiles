@@ -1,17 +1,31 @@
-# Helper function to cache eval
-_evalcache() {
-  local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/eval"
-  [[ ! -d $cache_dir ]] && mkdir -p "$cache_dir"
-  local ver="$(command "$1" --version 2>/dev/null | head -1)"
-  local cache_file="$cache_dir/evalcache_${1}_${ver:+${ver// /_}}.zsh"
+autoload -Uz _evalcache
 
-  shift
-  if [[ ! -s "$cache_file" ]]; then
-    "$@" > "$cache_file"
-  fi
-  source "$cache_file"
-}
+# mise-en-place (shims mode for near-instant startup, no precmd hook)
+if (( $+commands[mise] )); then
+  _evalcache mise mise activate zsh --shims
+fi
 
-for evalcache_files in "${ZDOTDIR}"/conf.d/zshrc/integrations/evalcache/*.zsh(N); do
-    [[ -f "$evalcache_files" ]] && source "$evalcache_files"
-done
+# direnv
+if (( $+commands[direnv] )); then
+  _evalcache direnv direnv hook zsh
+fi
+
+# atuin
+if (( $+commands[atuin] )); then
+  _evalcache atuin atuin init zsh
+fi
+
+# zoxide
+if (( $+commands[zoxide] )); then
+  _evalcache zoxide zoxide init --cmd cd zsh
+fi
+
+# starship prompt
+if (( $+commands[starship] )); then
+  _evalcache starship starship init zsh
+fi
+
+# run completions
+if (( $+commands[run] )); then
+  _evalcache run run --completion zsh
+fi

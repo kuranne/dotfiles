@@ -1,7 +1,7 @@
 # ==============================================================================
 # ENVIRONMENT VARIABLES (.zshenv)
 # ==============================================================================
-[[ -f "${ZDOTDIR}/bundle/.zshenv" ]] && source "${ZDOTDIR}/bundle/.zshenv" && return
+[[ -f "${ZDOTDIR}/bundle/.zshenv" ]] && { source "${ZDOTDIR}/bundle/.zshenv"; return 0; }
 # --- System & Tool Environment Variables ---
 export LANG="en_US.UTF-8"
 
@@ -100,7 +100,7 @@ _export_brew_prefix() {
 
     for bbd in $brew_bindir; do
         if [[ -e "$bbd" ]]; then
-            export BREW_PREFIX="$bbd"
+            export BREW_PREFIX="${bbd%/bin/brew}"
             return 0
         fi
     done

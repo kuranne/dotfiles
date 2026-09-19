@@ -1,0 +1,25 @@
+local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/eval"
+[[ ! -d $cache_dir ]] && mkdir -p "$cache_dir"
+
+local cmd_name="${1:t}"
+# Support both `_evalcache cmd cmd arg...` and `_evalcache cmd arg...`
+if [[ "$cmd_name" == "${2:t}" || -x "$2" ]]; then
+  shift
+fi
+
+local bin_path="${commands[$1]:-$1}"
+local bin_target="${bin_path:A}"
+local cache_file="$cache_dir/evalcache_${cmd_name}.zsh"
+
+# Invalidate cache if file doesn't exist, is empty, or binary was updated
+if [[ ! -s "$cache_file" || ( -f "$bin_target" && "$bin_target" -nt "$cache_file" ) ]]; then
+  local tmp_file="$cache_file.tmp.$$"
+  if "$@" > "$tmp_file"; then
+    mv -f "$tmp_file" "$cache_file"
+    zcompile -R "$cache_file" 2>/dev/null
+  else
+    rm -f "$tmp_file"
+  fi
+fi
+
+[[ -s "$cache_file" ]] && source "$cache_file"
